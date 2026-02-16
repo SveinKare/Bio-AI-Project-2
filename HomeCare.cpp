@@ -76,4 +76,19 @@ class HomeCare {
     void run() {
 
     }
+
+    int getNumberOfNurses() const { return numberOfNurses; }
+    int getCapacity() const { return capacity; }
+    double getBenchmark() const { return benchmark; }
+    int getReturnTime() const { return returnTime; }
+    const vector<Patient>& getPatients() const { return patients; }
+    const vector<vector<double>>& getTravelTimes() const { return travelTimes; }
+    int getNbrPatients() const { return static_cast<int>(patients.size()); }
+
+    double getTravelTime(int from, int to) const {
+      size_t i = (from < 0) ? 0 : static_cast<size_t>(from) + 1;
+      size_t j = (to < 0) ? 0 : static_cast<size_t>(to) + 1;
+      if (i >= travelTimes.size() || j >= travelTimes[0].size()) return 0;
+      return travelTimes[i][j];
+    }
 };
