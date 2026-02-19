@@ -1,4 +1,3 @@
-#include <iomanip>
 #include <string>
 #include <nlohmann/json.hpp>
 #include <fstream>
@@ -40,24 +39,32 @@ class HomeCare {
         if (index > maxKey) maxKey = index;
       }
 
-      this->patients.resize(maxKey);
+      this->patients.resize(maxKey + 1);
+      this->patients[0] = Patient(); // Inserting dummy at the start to get 1-indexed vector
 
       for (auto& [key, value] : data["patients"].items()) {
-        int index = stoi(key) - 1; // Dataset is 1-indexed, which is a pain to work with
+        int index = stoi(key);
         this->patients[index] = Patient(
             value["demand"],
             value["start_time"],
             value["end_time"],
-            value["care_time"]
+            value["care_time"],
+            value["x_coord"],
+            value["y_coord"]
             );
       }
 
+      bool first = true;
       for (auto p : this->patients) {
+        // First element is a dummy
+        if (first) {
+          first = false;
+          continue;
+        }
         if (!p.valid()) {
           cout << "Invalid patient: " << p.toString() << endl;
         }
       }
-
       this->travelTimes = data["travel_times"].get<vector<vector<double>>>();
 
       return true;
@@ -83,7 +90,7 @@ class HomeCare {
     int getReturnTime() const { return returnTime; }
     const vector<Patient>& getPatients() const { return patients; }
     const vector<vector<double>>& getTravelTimes() const { return travelTimes; }
-    int getNbrPatients() const { return static_cast<int>(patients.size()); }
+    int getNbrPatients() const { return static_cast<int>(patients.size()-1); }
 
     double getTravelTime(int from, int to) const {
       size_t i = (from < 0) ? 0 : static_cast<size_t>(from) + 1;
