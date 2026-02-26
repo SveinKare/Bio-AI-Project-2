@@ -227,6 +227,86 @@ void writeClustersToCSV(const std::vector<std::vector<int>>& clusters,
   file.close();
   std::cout << "Clusters written to " << path << std::endl;
 }
+/*
+void runRuinAndRepairGA() {
+    vector<double> epsilonValues       = {0.05, 0.1, 0.2, 0.3, 0.5};
+    vector<double> crossoverRateValues = {0.05, 0.1, 0.2, 0.4, 0.6};
+    vector<double> mutationRateValues  = {0.01, 0.02, 0.05, 0.1, 0.2};
+    vector<double> scalingFactorValues = {0.1, 0.5, 1.0, 2.0, 5.0};
+
+    struct Result {
+        double epsilon, crossoverRate, mutationRate, scalingFactor;
+        double minFitness;
+    };
+    vector<Result> results;
+
+    int total = epsilonValues.size() * crossoverRateValues.size() * mutationRateValues.size() * scalingFactorValues.size();
+    int current = 0;
+
+    for (double epsilon : epsilonValues) {
+        for (double crossoverRate : crossoverRateValues) {
+            for (double mutationRate : mutationRateValues) {
+                for (double scalingFactor : scalingFactorValues) {
+                    cout << "Run " << ++current << "/" << total
+                         << " | epsilon=" << epsilon
+                         << " crossover=" << crossoverRate
+                         << " mutation=" << mutationRate
+                         << " scaling=" << scalingFactor << endl;
+
+                    HomeCare homeCare;
+                    homeCare.init("./data/train_0.json");
+
+                    RuinAndRepair r(
+                        homeCare,
+                        2000,
+                        epsilon,
+                        3,
+                        100,
+                        0.0,
+                        crossoverRate,
+                        mutationRate,
+                        scalingFactor,
+                        4
+                    );
+                    r.run();
+
+                    results.push_back({epsilon, crossoverRate, mutationRate, scalingFactor, r.getMinFitness()});
+                }
+            }
+        }
+    }
+
+    // Sort by best fitness
+    sort(results.begin(), results.end(), [](const Result& a, const Result& b) {
+        return a.minFitness < b.minFitness;
+    });
+
+    // Write to file
+    ofstream file("results.csv");
+    file << "fitness,epsilon,crossover_rate,mutation_rate,scaling_factor\n";
+    file << fixed << setprecision(4);
+    for (const auto& res : results) {
+        file << res.minFitness << ","
+             << res.epsilon << ","
+             << res.crossoverRate << ","
+             << res.mutationRate << ","
+             << res.scalingFactor << "\n";
+    }
+    file.close();
+    cout << "Results written to results.csv" << endl;
+
+    // Print top 5 to console
+    cout << "\n=== Top 5 configurations ===\n";
+    for (int i = 0; i < min(5, (int)results.size()); i++) {
+        const auto& res = results[i];
+        cout << "#" << i+1 << " fitness=" << res.minFitness
+             << " epsilon=" << res.epsilon
+             << " crossover=" << res.crossoverRate
+             << " mutation=" << res.mutationRate
+             << " scaling=" << res.scalingFactor << "\n";
+    }
+}
+*/
 
 void runRuinAndRepairGA() {
   HomeCare homeCare;
@@ -235,14 +315,14 @@ void runRuinAndRepairGA() {
   RuinAndRepair r(
       homeCare, 
       2000, // Popsize
-      0.01, //Epsilon
+      0.1, //Epsilon
       3, //kParents
-      1000, //Generations
+      200, //Generations
       0.0, //Penalty
-      0.01, // Crossover rate
-      0.01, //Mutation rate
-      0.5, // Scaling factor
-      4 // k Elites
+      0.8, // Crossover rate
+      0.05, //Mutation rate
+      0.1, // Scaling factor
+      6 // k Elites
       );
   r.run();
 }

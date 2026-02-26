@@ -56,6 +56,8 @@ public:
         int kElites
         );
 
+    double getMinFitness();
+
     void test();
 
     void run();

@@ -33,16 +33,25 @@ RuinAndRepair::RuinAndRepair(
     kElites(kElites)
 {}
 
+double RuinAndRepair::getMinFitness() {
+  double minFitness = numeric_limits<double>::max();
+
+  for (const auto& ind : population) {
+    minFitness = min(minFitness, ind.getFitness());
+  }
+  return minFitness;
+}
+
 void RuinAndRepair::printPopulationStats() {
-    double minFitness = numeric_limits<double>::max();
-    double maxFitness = numeric_limits<double>::lowest();
+  double minFitness = numeric_limits<double>::max();
+  double maxFitness = numeric_limits<double>::lowest();
 
-    for (const auto& ind : population) {
-        minFitness = min(minFitness, ind.getFitness());
-        maxFitness = max(maxFitness, ind.getFitness());
-    }
+  for (const auto& ind : population) {
+    minFitness = min(minFitness, ind.getFitness());
+    maxFitness = max(maxFitness, ind.getFitness());
+  }
 
-    cout << "Min fitness: " << minFitness << " | Max fitness: " << maxFitness << endl;
+  cout << "Min fitness: " << minFitness << " | Max fitness: " << maxFitness << endl;
 }
 
 Individual RuinAndRepair::randomIndividual(vector<vector<int>>& clusters) {
@@ -118,11 +127,11 @@ void RuinAndRepair::initPopulation() {
 }
 
 vector<Individual> RuinAndRepair::eliteSelection() {
-    vector<Individual> sorted = this->population;
-    sort(sorted.begin(), sorted.end(), [](const Individual& a, const Individual& b) {
-        return a.getFitness() < b.getFitness(); 
-    });
-    return vector<Individual>(sorted.begin(), sorted.begin() + kElites);
+  vector<Individual> sorted = this->population;
+  sort(sorted.begin(), sorted.end(), [](const Individual& a, const Individual& b) {
+      return a.getFitness() < b.getFitness(); 
+      });
+  return vector<Individual>(sorted.begin(), sorted.begin() + kElites);
 }
 
 Individual RuinAndRepair::tournamentParentSelection(vector<Individual>::iterator begin, vector<Individual>::iterator end) {
@@ -231,7 +240,7 @@ void RuinAndRepair::test() {
 
 void RuinAndRepair::mutate(Individual& individual) {
   vector<int> gene = individual.getGenes();
-  double ruinFraction = 0.2;
+  double ruinFraction = 0.05;
 
   // Only operate on the inner part of the gene (excluding first and last depot)
   vector<int> inner(gene.begin() + 1, gene.end() - 1);
