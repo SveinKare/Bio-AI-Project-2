@@ -128,11 +128,11 @@ vector<Individual> RuinAndRepair::eliteSelection() {
 Individual RuinAndRepair::tournamentParentSelection(vector<Individual>::iterator begin, vector<Individual>::iterator end) {
   if (begin == end) throw runtime_error("Parent selection attempted with no candidates");
   Individual* best = nullptr;
-  double max = 0;
+  double min = numeric_limits<double>::max();
   for (auto it = begin; it != end; it++) {
     double fitness = it->getFitness();
-    if (fitness > max) {
-      max = fitness;
+    if (fitness < min) {  // ← minimizing
+      min = fitness;
       best = &(*it);
     }
   }
@@ -203,11 +203,11 @@ void RuinAndRepair::orderCrossover(vector<Individual>& parents, vector<Individua
 }
 
 void printIndividual(const Individual& ind, const std::string& label) {
-    std::cout << label << ": [ ";
-    for (int g : ind.getGenes()) {
-        std::cout << g << " ";
-    }
-    std::cout << "] fitness=" << ind.getFitness() << "\n";
+  std::cout << label << ": [ ";
+  for (int g : ind.getGenes()) {
+    std::cout << g << " ";
+  }
+  std::cout << "] fitness=" << ind.getFitness() << "\n";
 }
 
 void RuinAndRepair::test() {
@@ -233,17 +233,19 @@ void RuinAndRepair::mutate(Individual& individual) {
   vector<int> gene = individual.getGenes();
   double ruinFraction = 0.2;
 
-  int geneSize = (int)gene.size();
-  int ruinSize = max(1, (int)(geneSize * ruinFraction));
+  // Only operate on the inner part of the gene (excluding first and last depot)
+  vector<int> inner(gene.begin() + 1, gene.end() - 1);
+  int innerSize = (int)inner.size();
+  int ruinSize = max(1, (int)(innerSize * ruinFraction));
 
-  uniform_int_distribution<int> startDist(0, geneSize - ruinSize);
+  uniform_int_distribution<int> startDist(0, innerSize - ruinSize);
   int startIdx = startDist(rng);
 
-  // --- RUIN: extract segment ---
-  vector<int> ruined(gene.begin() + startIdx, gene.begin() + startIdx + ruinSize);
+  // --- RUIN: extract segment from inner ---
+  vector<int> ruined(inner.begin() + startIdx, inner.begin() + startIdx + ruinSize);
   vector<int> remaining;
-  remaining.insert(remaining.end(), gene.begin(), gene.begin() + startIdx);
-  remaining.insert(remaining.end(), gene.begin() + startIdx + ruinSize, gene.end());
+  remaining.insert(remaining.end(), inner.begin(), inner.begin() + startIdx);
+  remaining.insert(remaining.end(), inner.begin() + startIdx + ruinSize, inner.end());
 
   // --- REPAIR: split ruined into patients and depots ---
   vector<int> ruinedPatients, ruinedDepots;
@@ -273,12 +275,22 @@ void RuinAndRepair::mutate(Individual& individual) {
 
   // Reinsert depots randomly
   for (int dep : ruinedDepots) {
+    if (remaining.size() <= 1) {
+      remaining.push_back(dep);
+      continue;
+    }
     uniform_int_distribution<int> depotDist(1, (int)remaining.size() - 1);
     remaining.insert(remaining.begin() + depotDist(rng), dep);
   }
 
-  individual.setGenes(remaining);
-  individual.setFitness(homeCare.calculateFitness(remaining, this->penalty));
+  // Rebuild full gene with preserved start and end depots
+  vector<int> newGene;
+  newGene.push_back(0);
+  newGene.insert(newGene.end(), remaining.begin(), remaining.end());
+  newGene.push_back(0);
+
+  individual.setGenes(newGene);
+  individual.setFitness(homeCare.calculateFitness(newGene, this->penalty));
 }
 
 void RuinAndRepair::generalizedCrowding(vector<Individual>& parents, vector<Individual>& children, vector<Individual>& survivors) {
@@ -327,6 +339,7 @@ void RuinAndRepair::run() {
     vector<Individual> newPop;
     auto elites = this->eliteSelection();
     newPop.insert(newPop.end(), elites.begin(), elites.end());
+
     while (newPopSize < popSize) {
       // Select parents
       vector<Individual> candidates;
