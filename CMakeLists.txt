@@ -33,7 +33,7 @@ endif()
 find_package(OpenMP)
 
 # Add your executable
-add_executable(main main.cpp individual.cpp HomeCare.cpp Patient.cpp GA.cpp)
+add_executable(main main.cpp individual.cpp HomeCare.cpp Patient.cpp GA.cpp KMeans.cpp RuinAndRepair.cpp Similarity.cpp)
 
 # Link nlohmann/json
 target_link_libraries(main PRIVATE nlohmann_json::nlohmann_json)

@@ -6,6 +6,7 @@
 #include "Patient.hpp"
 
 using json = nlohmann::json;
+using namespace std;
 
 class HomeCare {
 private:
@@ -13,23 +14,24 @@ private:
     int capacity;
     double benchmark;
     int returnTime;
-    std::vector<Patient> patients;
-    std::vector<std::vector<double>> travelTimes;
+    vector<Patient> patients;
+    vector<vector<double>> travelTimes;
 
-    bool readDataset(std::string path);
+    bool readDataset(string path);
 
 public:
     HomeCare();
 
-    void init(std::string datasetPath);
-    void run();
+    void init(string datasetPath);
+    void testInit();
 
     int getNumberOfNurses() const;
     int getCapacity() const;
     double getBenchmark() const;
     int getReturnTime() const;
-    const std::vector<Patient>& getPatients() const;
-    const std::vector<std::vector<double>>& getTravelTimes() const;
+    const vector<Patient>& getPatients() const;
+    const vector<vector<double>>& getTravelTimes() const;
     int getNbrPatients() const;
     double getTravelTime(int from, int to) const;
+    double calculateFitness(const vector<int>& gene, double penalty) const;
 };

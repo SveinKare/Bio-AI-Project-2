@@ -5,8 +5,11 @@
 #include <thread>
 #include <chrono>
 #include <random>
-#include "HomeCare.cpp"
+#include "HomeCare.hpp"
 #include "GA.h"
+#include "KMeans.hpp"
+#include "RuinAndRepair.hpp"
+#include <fstream>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -201,10 +204,50 @@ void runIslandGA() {
   cout << "Benchmark: " << hc.getBenchmark() << endl;
 }
 
+void writeClustersToCSV(const std::vector<std::vector<int>>& clusters,
+    const std::vector<Patient>& patients,
+    const std::string& path) {
+  std::ofstream file(path);
+  if (!file.is_open()) {
+    std::cerr << "Could not open file: " << path << std::endl;
+    return;
+  }
+
+  file << "patient_index,x,y,cluster\n";
+  for (int c = 0; c < (int)clusters.size(); c++) {
+    for (int patientIdx : clusters[c]) {
+      const Patient& p = patients[patientIdx];
+      file << patientIdx << ","
+        << p.getXCoord() << ","
+        << p.getYCoord() << ","
+        << c << "\n";
+    }
+  }
+
+  file.close();
+  std::cout << "Clusters written to " << path << std::endl;
+}
+
 void runRuinAndRepairGA() {
   HomeCare homeCare;
   homeCare.init("./data/train_0.json");
+
+  RuinAndRepair r(
+      homeCare, 
+      2000, // Popsize
+      0.01, //Epsilon
+      3, //kParents
+      1000, //Generations
+      0.0, //Penalty
+      0.01, // Crossover rate
+      0.01, //Mutation rate
+      0.5, // Scaling factor
+      4 // k Elites
+      );
+  r.run();
 }
+
+
 
 int main() {
   //runIslandGA();

@@ -1,5 +1,5 @@
 #include "GA.h"
-#include "HomeCare.cpp"
+#include "HomeCare.hpp"
 #include <vector>
 #include <random>
 #include <algorithm>
