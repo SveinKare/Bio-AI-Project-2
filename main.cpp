@@ -229,7 +229,7 @@ void writeClustersToCSV(const std::vector<std::vector<int>>& clusters,
 }
 /*
 void runRuinAndRepairGA() {
-    vector<double> epsilonValues       = {0.05, 0.1, 0.2, 0.3, 0.5};
+    double epsilon = 0.1;
     vector<double> crossoverRateValues = {0.05, 0.1, 0.2, 0.4, 0.6};
     vector<double> mutationRateValues  = {0.01, 0.02, 0.05, 0.1, 0.2};
     vector<double> scalingFactorValues = {0.1, 0.5, 1.0, 2.0, 5.0};
@@ -240,74 +240,74 @@ void runRuinAndRepairGA() {
     };
     vector<Result> results;
 
-    int total = epsilonValues.size() * crossoverRateValues.size() * mutationRateValues.size() * scalingFactorValues.size();
+    int total = crossoverRateValues.size() * mutationRateValues.size() * scalingFactorValues.size();
     int current = 0;
 
-    for (double epsilon : epsilonValues) {
-        for (double crossoverRate : crossoverRateValues) {
-            for (double mutationRate : mutationRateValues) {
-                for (double scalingFactor : scalingFactorValues) {
-                    cout << "Run " << ++current << "/" << total
-                         << " | epsilon=" << epsilon
-                         << " crossover=" << crossoverRate
-                         << " mutation=" << mutationRate
-                         << " scaling=" << scalingFactor << endl;
+    for (int i = 0; i < 10; i++) {
 
-                    HomeCare homeCare;
-                    homeCare.init("./data/train_0.json");
+      for (double crossoverRate : crossoverRateValues) {
+        for (double mutationRate : mutationRateValues) {
+          for (double scalingFactor : scalingFactorValues) {
+            cout << "Run " << ++current << "/" << total
+              << " | epsilon=" << epsilon
+              << " crossover=" << crossoverRate
+              << " mutation=" << mutationRate
+              << " scaling=" << scalingFactor << endl;
 
-                    RuinAndRepair r(
-                        homeCare,
-                        2000,
-                        epsilon,
-                        3,
-                        100,
-                        0.0,
-                        crossoverRate,
-                        mutationRate,
-                        scalingFactor,
-                        4
-                    );
-                    r.run();
+            HomeCare homeCare;
+            homeCare.init("./data/train_" + to_string(i) + ".json");
 
-                    results.push_back({epsilon, crossoverRate, mutationRate, scalingFactor, r.getMinFitness()});
-                }
-            }
+            RuinAndRepair r(
+                homeCare,
+                2000,
+                epsilon,
+                3,
+                100,
+                0.0,
+                crossoverRate,
+                mutationRate,
+                scalingFactor,
+                4
+                );
+            r.run();
+
+            results.push_back({epsilon, crossoverRate, mutationRate, scalingFactor, r.getMinFitness()});
+          }
         }
+      }
     }
 
     // Sort by best fitness
     sort(results.begin(), results.end(), [](const Result& a, const Result& b) {
         return a.minFitness < b.minFitness;
-    });
+        });
 
     // Write to file
-    ofstream file("results.csv");
+    ofstream file("results_all.csv");
     file << "fitness,epsilon,crossover_rate,mutation_rate,scaling_factor\n";
     file << fixed << setprecision(4);
     for (const auto& res : results) {
-        file << res.minFitness << ","
-             << res.epsilon << ","
-             << res.crossoverRate << ","
-             << res.mutationRate << ","
-             << res.scalingFactor << "\n";
+      file << res.minFitness << ","
+        << res.epsilon << ","
+        << res.crossoverRate << ","
+        << res.mutationRate << ","
+        << res.scalingFactor << "\n";
     }
     file.close();
-    cout << "Results written to results.csv" << endl;
+    cout << "Results written to results_all.csv" << endl;
 
     // Print top 5 to console
     cout << "\n=== Top 5 configurations ===\n";
     for (int i = 0; i < min(5, (int)results.size()); i++) {
-        const auto& res = results[i];
-        cout << "#" << i+1 << " fitness=" << res.minFitness
-             << " epsilon=" << res.epsilon
-             << " crossover=" << res.crossoverRate
-             << " mutation=" << res.mutationRate
-             << " scaling=" << res.scalingFactor << "\n";
+      const auto& res = results[i];
+      cout << "#" << i+1 << " fitness=" << res.minFitness
+        << " epsilon=" << res.epsilon
+        << " crossover=" << res.crossoverRate
+        << " mutation=" << res.mutationRate
+        << " scaling=" << res.scalingFactor << "\n";
     }
 }
 */
-
 void runRuinAndRepairGA() {
   HomeCare homeCare;
   homeCare.init("./data/train_0.json");
