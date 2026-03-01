@@ -1,5 +1,6 @@
 #pragma once
 #include "HomeCare.hpp"
+#include "Similarity.hpp"
 #include "individual.h"
 #include <vector>
 
@@ -23,6 +24,7 @@ private:
     double mutationRate;
     double scalingFactor;
     int kElites;
+    SimilarityFunc similarityFunc;
 
     std::vector<Individual> population;
 
@@ -53,7 +55,8 @@ public:
         double crossoverRate, 
         double mutationRate,
         double scalingFactor,
-        int kElites
+        int kElites,
+        SimilarityFunc similarityFunc
         );
 
     double getMinFitness();

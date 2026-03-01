@@ -20,7 +20,8 @@ RuinAndRepair::RuinAndRepair(
     double crossoverRate, 
     double mutationRate,
     double scalingFactor,
-    int kElites)
+    int kElites,
+    SimilarityFunc similarityFunc)
     : homeCare(homeCare), 
     popSize(popSize), 
     epsilon(epsilon), 
@@ -30,7 +31,8 @@ RuinAndRepair::RuinAndRepair(
     crossoverRate(crossoverRate), 
     mutationRate(mutationRate),
     scalingFactor(scalingFactor),
-    kElites(kElites)
+    kElites(kElites),
+    similarityFunc(similarityFunc)
 {}
 
 double RuinAndRepair::getMinFitness() {
@@ -305,8 +307,8 @@ void RuinAndRepair::mutate(Individual& individual) {
 void RuinAndRepair::generalizedCrowding(vector<Individual>& parents, vector<Individual>& children, vector<Individual>& survivors) {
   uniform_real_distribution<double> randEvent(0.0, 1.0);
   // MINIMIZE FITNESS
-  double simA = cosineSimilarity(parents[0].getGenes(), children[0].getGenes()) + cosineSimilarity(parents[1].getGenes(), children[1].getGenes());
-  double simB = cosineSimilarity(parents[1].getGenes(), children[0].getGenes()) + cosineSimilarity(parents[0].getGenes(), children[1].getGenes());
+  double simA = similarityFunc(parents[0].getGenes(), children[0].getGenes()) + similarityFunc(parents[1].getGenes(), children[1].getGenes());
+  double simB = similarityFunc(parents[1].getGenes(), children[0].getGenes()) + similarityFunc(parents[0].getGenes(), children[1].getGenes());
 
   // With cosine similarity we want to maximize the value
   Individual o1;

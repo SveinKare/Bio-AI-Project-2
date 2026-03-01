@@ -7,8 +7,8 @@
 #include <random>
 #include "HomeCare.hpp"
 #include "GA.h"
-#include "KMeans.hpp"
 #include "RuinAndRepair.hpp"
+#include "Similarity.hpp"
 #include <fstream>
 
 #ifdef _OPENMP
@@ -310,7 +310,7 @@ void runRuinAndRepairGA() {
 */
 void runRuinAndRepairGA() {
   HomeCare homeCare;
-  homeCare.init("./data/train_0.json");
+  homeCare.init("./data/train_1.json");
 
   RuinAndRepair r(
       homeCare, 
@@ -319,10 +319,11 @@ void runRuinAndRepairGA() {
       3, //kParents
       200, //Generations
       0.0, //Penalty
-      0.8, // Crossover rate
+      0.6, // Crossover rate
       0.05, //Mutation rate
       0.1, // Scaling factor
-      6 // k Elites
+      6, // k Elites
+      cosineSimilarity // Similarity function
       );
   r.run();
 }
