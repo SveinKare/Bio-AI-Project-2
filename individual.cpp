@@ -45,7 +45,7 @@ static std::vector<std::vector<int>> genesToRoutes(const std::vector<int>& g) {
                 routes.push_back(std::move(current));
                 current.clear();
             }
-        } else if (x >= 0) {
+        } else if (x > 0) {
             current.push_back(x);
         }
     }
@@ -116,7 +116,7 @@ void Individual::swapMutation() {
 void Individual::swapMutation(std::mt19937& rng) {
     std::vector<size_t> patientPos;
     for (size_t i = 0; i < genes.size(); ++i) {
-        if (genes[i] >= 0) patientPos.push_back(i);
+        if (genes[i] > 0) patientPos.push_back(i);
     }
     if (patientPos.size() < 2) return;
     std::uniform_real_distribution<double> u(0.0, 1.0);

@@ -1,0 +1,19 @@
+Nurse capacity: 200
+Depot return time: 240
+--------------------------------------------------------------------------------
+Nurse 1	Duration: 106.4	Demand: 190	Patients: 2 45 6 7 8 46 4 5 3 1
+Nurse 2	Duration: 94.3	Demand: 109	Patients: 98 53 12 10 16 13 82 90
+Nurse 3	Duration: 111.5	Demand: 133	Patients: 54 72 42 44 40 35 37 43 61
+Nurse 4	Duration: 115.0	Demand: 164	Patients: 83 24 23 49 19 18 48 21 25
+Nurse 5	Duration: 115.9	Demand: 160	Patients: 65 52 99 86 87 97 59 74 57
+Nurse 6	Duration: 107.9	Demand: 102	Patients: 91 95 85 63 89 76 51
+Nurse 7	Duration: 111.2	Demand: 148	Patients: 69 88 78 79 73 17 47 14
+Nurse 8	Duration: 89.4	Demand: 131	Patients: 81 39 36 38 41 68
+Nurse 9	Duration: 45.3	Demand: 42	Patients: 55 100 70
+Nurse 10	Duration: 125.8	Demand: 153	Patients: 96 71 27 26 30 32 50 80
+Nurse 11	Duration: 82.4	Demand: 97	Patients: 92 64 20 22 66
+Nurse 12	Duration: 122.7	Demand: 106	Patients: 33 28 29 31 34 93 94
+Nurse 13	Duration: 69.6	Demand: 49	Patients: 67 62 84 56
+Nurse 14	Duration: 165.8	Demand: 140	Patients: 60 11 15 9 75 58 77
+--------------------------------------------------------------------------------
+Objective value (total duration): 1463.2

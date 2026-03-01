@@ -15,6 +15,7 @@ class HomeCare {
     int capacity;
     double benchmark;
     int returnTime;
+    int nbrPatients;
     vector<Patient> patients;
     vector<vector<double>> travelTimes;
 
@@ -40,10 +41,11 @@ class HomeCare {
         if (index > maxKey) maxKey = index;
       }
 
-      this->patients.resize(maxKey);
+      this->nbrPatients = maxKey;
+      this->patients.resize(maxKey + 1);
 
       for (auto& [key, value] : data["patients"].items()) {
-        int index = stoi(key) - 1; // Dataset is 1-indexed, which is a pain to work with
+        int index = stoi(key);
         this->patients[index] = Patient(
             value["demand"],
             value["start_time"],
@@ -52,9 +54,9 @@ class HomeCare {
             );
       }
 
-      for (auto p : this->patients) {
-        if (!p.valid()) {
-          cout << "Invalid patient: " << p.toString() << endl;
+      for (int i = 1; i <= nbrPatients; ++i) {
+        if (!patients[i].valid()) {
+          cout << "Invalid patient " << i << ": " << patients[i].toString() << endl;
         }
       }
 
@@ -83,11 +85,11 @@ class HomeCare {
     int getReturnTime() const { return returnTime; }
     const vector<Patient>& getPatients() const { return patients; }
     const vector<vector<double>>& getTravelTimes() const { return travelTimes; }
-    int getNbrPatients() const { return static_cast<int>(patients.size()); }
+    int getNbrPatients() const { return nbrPatients; }
 
     double getTravelTime(int from, int to) const {
-      size_t i = (from < 0) ? 0 : static_cast<size_t>(from) + 1;
-      size_t j = (to < 0) ? 0 : static_cast<size_t>(to) + 1;
+      size_t i = static_cast<size_t>(from);
+      size_t j = static_cast<size_t>(to);
       if (i >= travelTimes.size() || j >= travelTimes[0].size()) return 0;
       return travelTimes[i][j];
     }
