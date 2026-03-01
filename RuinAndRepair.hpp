@@ -61,6 +61,8 @@ public:
 
     double getMinFitness();
 
+    Individual getBestSolution();
+
     void test();
 
     void run();

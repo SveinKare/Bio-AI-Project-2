@@ -310,22 +310,33 @@ void runRuinAndRepairGA() {
 */
 void runRuinAndRepairGA() {
   HomeCare homeCare;
-  homeCare.init("./data/train_1.json");
+  homeCare.init("./data/train_0.json");
 
   RuinAndRepair r(
       homeCare, 
-      2000, // Popsize
+      5000, // Popsize
       0.1, //Epsilon
       3, //kParents
-      200, //Generations
-      0.0, //Penalty
+      500, //Generations
+      0.5, //Penalty
       0.6, // Crossover rate
       0.05, //Mutation rate
       0.1, // Scaling factor
       6, // k Elites
       cosineSimilarity // Similarity function
       );
-  r.run();
+  try {
+    r.run();
+  } catch (const runtime_error& e) {
+    cout << e.what() << endl;
+    return;
+  }
+  auto solution = r.getBestSolution();
+  cout << "Solution: ";
+  for (auto pat : solution.getGenes()) {
+    cout << pat << " ";
+  }
+  cout << endl << "Fitness: " << solution.getFitness() << endl;
 }
 
 

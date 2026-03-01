@@ -2,6 +2,7 @@
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
 
 using json = nlohmann::json;
 
@@ -79,20 +80,83 @@ double HomeCare::getTravelTime(int from, int to) const {
     return travelTimes[i][j];
 }
 
+bool HomeCare::allPatientsPresent(const vector<int>& solution) const {
+  int nPatients = this->getNbrPatients();
+  std::vector<bool> present(nPatients + 1, false); 
+
+  for (int patient : solution) {
+    if (patient == 0) continue;
+    if (patient < 0 || patient > nPatients) {
+      return false;  // Invalid patient ID
+    }
+    if (present[patient]) {
+      return false;  // Duplicate found
+    }
+    present[patient] = true;
+  }
+
+  for (int i = 1; i <= nPatients; i++) {
+    if (!present[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 double HomeCare::calculateFitness(const vector<int>& gene, double penalty) const {
   if (gene.empty()) {
-    return 0.0;
+    return INFINITY;
   }
+  // The logic in the algorithm requires all patients to be present, so this is considered an error
+  if (!allPatientsPresent(gene)) {
+    throw runtime_error("Invalid gene found");
+  }
+  if (gene[0] != 0 || gene[gene.size()-1] != 0) {
+    throw runtime_error("Gene is missing 0 at start or end");
+  }
+
+  // How much we have violated the constraints
+  int excessStrain = 0;
+  double timeViolations = 0.0;
 
   double sum = 0.0;
   double currentRoute = 0.0;
+  int currentDemand = 0;
+  double time = 0.0;
   for (size_t i = 1; i < gene.size(); i++) {
-    currentRoute += this->travelTimes[gene[i-1]][gene[i]];
+    int currentPatient = gene[i];
+    double travelTime = this->travelTimes[gene[i-1]][currentPatient]; 
+    time += travelTime;
+    currentRoute += travelTime;
+
     if (gene[i] == 0) { // Depot
       sum += currentRoute;
+
+      // Constraints
+      excessStrain += max(0, currentDemand - this->capacity);
+      timeViolations += max(0.0, time - this->returnTime);
+
       currentRoute = 0.0;
+      time = 0.0;
+      currentDemand = 0;
+      continue;
     }
+
+    // Waiting
+    if (time < patients[currentPatient].getStartTime()) {
+      time  += patients[currentPatient].getStartTime() - time;
+    }
+
+    time += patients[currentPatient].getCareTime();
+
+    // If the nurse is too late, we add a penalty
+    if (time > patients[currentPatient].getEndTime()) {
+      timeViolations += time - patients[currentPatient].getEndTime();
+    }
+    currentDemand += patients[currentPatient].getDemand();
   }
 
-  return sum;
+  return sum + penalty*excessStrain + penalty*timeViolations;
 }
+
+

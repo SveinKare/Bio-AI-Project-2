@@ -1,6 +1,7 @@
 #include "RuinAndRepair.hpp"
 #include "KMeans.hpp"
 #include "individual.h"
+#include <limits>
 #include <random>
 #include <iostream>
 #include <vector>
@@ -34,6 +35,22 @@ RuinAndRepair::RuinAndRepair(
     kElites(kElites),
     similarityFunc(similarityFunc)
 {}
+Individual RuinAndRepair::getBestSolution() {
+  double minFitness = numeric_limits<double>::max();
+  Individual best;
+
+  for (const auto& ind : population) {
+    if (ind.getFitness() > minFitness) continue;
+
+    if (homeCare.calculateFitness(ind.getGenes(), 0.0) == ind.getFitness()) {
+      // Fitness has no penalty, which means it's a legal solution
+      minFitness = ind.getFitness();
+      best = ind;
+    }
+  }
+
+  return best;
+}
 
 double RuinAndRepair::getMinFitness() {
   double minFitness = numeric_limits<double>::max();
@@ -41,6 +58,7 @@ double RuinAndRepair::getMinFitness() {
   for (const auto& ind : population) {
     minFitness = min(minFitness, ind.getFitness());
   }
+
   return minFitness;
 }
 
