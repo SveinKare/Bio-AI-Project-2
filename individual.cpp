@@ -38,6 +38,14 @@ void Individual::setPenalty(double penalty) {
   this->penalty = penalty;
 }
 
+double Individual::getScalingFactor() const {
+  return this->scalingFactor;
+}
+
+void Individual::setScalingFactor(double scalingFactor) {
+  this->scalingFactor = scalingFactor;
+}
+
 void Individual::swapPatients(size_t idx1, size_t idx2) {
     if (idx1 < genes.size() && idx2 < genes.size()) {
         std::swap(genes[idx1], genes[idx2]);

@@ -10,6 +10,7 @@ class Individual {
 private:
     double fitness;
     double penalty;
+    double scalingFactor;
     std::vector<int> genes;
 
 public:
@@ -23,6 +24,8 @@ public:
     void setGenes(std::vector<int>&& g);
     double getPenalty() const;
     void setPenalty(double penalty);
+    double getScalingFactor() const;
+    void setScalingFactor(double scalingFactor);
 
     void swapPatients(size_t idx1, size_t idx2);
     void mutation(double mutationRate);

@@ -390,11 +390,11 @@ void runRuinAndRepairGA() {
       2000, // Popsize
       0.1, //Epsilon
       3, //kParents
-      1000, //Generations
+      3000, //Generations
       2.5, //Penalty
       0.7, // Crossover rate
       0.3, //Mutation rate
-      0.5, // Scaling factor
+      2.5, // Scaling factor
       6, // k Elites
       cosineSimilarity // Similarity function
       );
@@ -422,3 +422,5 @@ int main() {
   runRuinAndRepairGA();
   return 0;
 }
+
+

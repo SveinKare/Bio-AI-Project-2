@@ -108,6 +108,8 @@ Individual RuinAndRepair::randomIndividual(vector<vector<int>>& clusters) {
     gene.insert(gene.end(), route.begin(), route.end());
   }
   gene.push_back(0);  // Final depot
+
+  uniform_real_distribution<double> scalingDist(0.0, scalingFactor);
   
   // Create individual
   auto individual = Individual();
@@ -115,6 +117,7 @@ Individual RuinAndRepair::randomIndividual(vector<vector<int>>& clusters) {
   auto fitness = homeCare.calculateFitness(gene, this->penalty);
   individual.setFitness(fitness.first + fitness.second);
   individual.setPenalty(fitness.second);
+  individual.setScalingFactor(scalingDist(rng));
   
   return individual;
 }
@@ -194,6 +197,7 @@ void RuinAndRepair::orderCrossover(vector<Individual>& parents, vector<Individua
 
   int allowedZeros = homeCare.getNumberOfNurses()-1;
 
+  double inheritedScalingFactor = (parents[0].getScalingFactor() + parents[1].getScalingFactor()) / 2;
   for (int i = 0; i < 2; i++) {
     // p1 = parents[i]
     // p2 = parents[(i+1)%2]
@@ -235,6 +239,7 @@ void RuinAndRepair::orderCrossover(vector<Individual>& parents, vector<Individua
     c.setGenes(gene);
     c.setFitness(fitness.first + fitness.second);
     c.setPenalty(fitness.second);
+    c.setScalingFactor(inheritedScalingFactor);
     children.push_back(c);
   }
 }
@@ -277,9 +282,14 @@ void RuinAndRepair::mutate(Individual& individual) {
   } else {
     exchangeMutation(individual);
   }
+
+  normal_distribution<double> gaussian(0.0, this->scalingFactor * 0.1);
+  double newScalingFactor = min(this->scalingFactor, (individual.getScalingFactor() + gaussian(rng)) );
+
   auto fitness = homeCare.calculateFitness(individual.getGenes(), this->penalty);
   individual.setFitness(fitness.first + fitness.second);
   individual.setPenalty(fitness.second);
+  individual.setScalingFactor(max(0.0, newScalingFactor));
 }
 
 void RuinAndRepair::twoOptMutation(Individual& individual) {
@@ -395,6 +405,9 @@ void RuinAndRepair::generalizedCrowding(vector<Individual>& parents, vector<Indi
     o1 = children[1];
     o2 = children[0];
   }
+
+  double sf1 = parents[0].getFitness() < o1.getFitness() ? parents[0].getScalingFactor() : o1.getScalingFactor();
+  double sf2 = parents[1].getFitness() < o2.getFitness() ? parents[1].getScalingFactor() : o2.getScalingFactor();
 
   // Inverted formula due to minimizing fitness
   auto replacementProb = [&](double fitnessChild, double fitnessParent) {
