@@ -30,6 +30,14 @@ void Individual::setGenes(std::vector<int>&& g) {
     genes = std::move(g);
 }
 
+double Individual::getPenalty() const {
+  return this->penalty;
+}
+
+void Individual::setPenalty(double penalty) {
+  this->penalty = penalty;
+}
+
 void Individual::swapPatients(size_t idx1, size_t idx2) {
     if (idx1 < genes.size() && idx2 < genes.size()) {
         std::swap(genes[idx1], genes[idx2]);

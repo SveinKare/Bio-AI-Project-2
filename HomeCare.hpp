@@ -34,5 +34,5 @@ public:
     int getNbrPatients() const;
     double getTravelTime(int from, int to) const;
     bool allPatientsPresent(const vector<int>& solution) const;
-    double calculateFitness(const vector<int>& gene, double penalty) const;
+    pair<double, double> calculateFitness(const vector<int>& gene, double penalty) const;
 };

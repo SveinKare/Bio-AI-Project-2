@@ -4,6 +4,7 @@
 #include <limits>
 #include <random>
 #include <iostream>
+#include <stdexcept>
 #include <vector>
 #include "Similarity.hpp"
 
@@ -44,7 +45,7 @@ Individual RuinAndRepair::getBestSolution() {
   for (const auto& ind : population) {
     if (ind.getFitness() > minFitness) continue;
 
-    if (homeCare.calculateFitness(ind.getGenes(), 0.0) == ind.getFitness()) {
+    if (ind.getPenalty() == 0.0) {
       // Fitness has no penalty, which means it's a legal solution
       minFitness = ind.getFitness();
       best = ind;
@@ -111,7 +112,9 @@ Individual RuinAndRepair::randomIndividual(vector<vector<int>>& clusters) {
   // Create individual
   auto individual = Individual();
   individual.setGenes(gene);
-  individual.setFitness(homeCare.calculateFitness(gene, this->penalty));
+  auto fitness = homeCare.calculateFitness(gene, this->penalty);
+  individual.setFitness(fitness.first + fitness.second);
+  individual.setPenalty(fitness.second);
   
   return individual;
 }
@@ -134,11 +137,28 @@ void RuinAndRepair::initPopulation() {
 }
 
 vector<Individual> RuinAndRepair::eliteSelection() {
-  vector<Individual> sorted = this->population;
-  sort(sorted.begin(), sorted.end(), [](const Individual& a, const Individual& b) {
+  vector<Individual> elites;
+  for (auto& ind : population) {
+    if (ind.getPenalty() == 0.0) {
+      elites.push_back(ind);
+    }
+  }
+  if (elites.size() < kElites) {
+    // If there are not enough valid solutions, we the best non-valid ones
+    vector<Individual> sorted = this->population;
+    sort(sorted.begin(), sorted.end(), [](const Individual& a, const Individual& b) {
+        return a.getFitness() < b.getFitness(); 
+        });
+    elites.insert(elites.end(), sorted.begin(), sorted.begin() + (kElites - elites.size()));
+  }
+
+  sort(elites.begin(), elites.end(), [](const Individual& a, const Individual& b) {
       return a.getFitness() < b.getFitness(); 
       });
-  return vector<Individual>(sorted.begin(), sorted.begin() + kElites);
+
+  if (elites.size() < kElites) throw runtime_error("Too few elites");
+
+  return vector<Individual>(elites.begin(), elites.begin()+kElites);
 }
 
 Individual RuinAndRepair::tournamentParentSelection(vector<Individual>::iterator begin, vector<Individual>::iterator end) {
@@ -147,7 +167,7 @@ Individual RuinAndRepair::tournamentParentSelection(vector<Individual>::iterator
   double min = numeric_limits<double>::max();
   for (auto it = begin; it != end; it++) {
     double fitness = it->getFitness();
-    if (fitness < min) {  // ← minimizing
+    if (fitness < min) {  
       min = fitness;
       best = &(*it);
     }
@@ -211,9 +231,10 @@ void RuinAndRepair::orderCrossover(vector<Individual>& parents, vector<Individua
       }
     }
 
-    int fitness = homeCare.calculateFitness(gene, this->penalty);
+    auto fitness = homeCare.calculateFitness(gene, this->penalty);
     c.setGenes(gene);
-    c.setFitness(fitness);
+    c.setFitness(fitness.first + fitness.second);
+    c.setPenalty(fitness.second);
     children.push_back(c);
   }
 }
@@ -249,13 +270,16 @@ void RuinAndRepair::mutate(Individual& individual) {
   uniform_real_distribution<double> choice(0.0, 1.0);
   double r = choice(rng);
   
-  if (r < 0.4) {
-    twoOptMutation(individual);      // 40%: Local route optimization
-  } else if (r < 0.7) {
-    relocateMutation(individual);    // 30%: Move patient between routes
+  if (r < 0.1) {
+    twoOptMutation(individual);
+  } else if (r < 0.9) {
+    relocateMutation(individual);
   } else {
-    exchangeMutation(individual);    // 30%: Swap patients between routes
+    exchangeMutation(individual);
   }
+  auto fitness = homeCare.calculateFitness(individual.getGenes(), this->penalty);
+  individual.setFitness(fitness.first + fitness.second);
+  individual.setPenalty(fitness.second);
 }
 
 void RuinAndRepair::twoOptMutation(Individual& individual) {
@@ -289,7 +313,6 @@ void RuinAndRepair::twoOptMutation(Individual& individual) {
   reverse(gene.begin() + i, gene.begin() + j + 1);
   
   individual.setGenes(gene);
-  individual.setFitness(homeCare.calculateFitness(gene, this->penalty));
 }
 
 void RuinAndRepair::relocateMutation(Individual& individual) {
@@ -327,7 +350,6 @@ void RuinAndRepair::relocateMutation(Individual& individual) {
   gene.insert(gene.begin() + insertIdx, patient);
   
   individual.setGenes(gene);
-  individual.setFitness(homeCare.calculateFitness(gene, this->penalty));
 }
 
 void RuinAndRepair::exchangeMutation(Individual& individual) {
@@ -354,7 +376,6 @@ void RuinAndRepair::exchangeMutation(Individual& individual) {
   swap(gene[pos1], gene[pos2]);
   
   individual.setGenes(gene);
-  individual.setFitness(homeCare.calculateFitness(gene, this->penalty));
 }
 
 void RuinAndRepair::generalizedCrowding(vector<Individual>& parents, vector<Individual>& children, vector<Individual>& survivors) {
@@ -428,9 +449,15 @@ void RuinAndRepair::run() {
       // Mutate
       if (randEvent(rng) < this->mutationRate) {
         this->mutate(children[0]);
+        auto fitness = homeCare.calculateFitness(children[0].getGenes(), this->penalty);
+        children[0].setFitness(fitness.first + fitness.second);
+        children[0].setPenalty(fitness.second);
+      }
+      if (randEvent(rng) < this->mutationRate) {
         this->mutate(children[1]);
-        children[0].setFitness(homeCare.calculateFitness(children[0].getGenes(), this->penalty));
-        children[1].setFitness(homeCare.calculateFitness(children[1].getGenes(), this->penalty));
+        auto fitness = homeCare.calculateFitness(children[1].getGenes(), this->penalty);
+        children[1].setFitness(fitness.first + fitness.second);
+        children[1].setPenalty(fitness.second);
       }
 
       // Crowding (group by cosine similarity)

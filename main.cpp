@@ -227,7 +227,7 @@ void writeClustersToCSV(const std::vector<std::vector<int>>& clusters,
   file.close();
   std::cout << "Clusters written to " << path << std::endl;
 }
-
+/*
 void runRuinAndRepairGA() {
     vector<double> penaltyValues = {0.5, 1.0, 2.5, 5.0};
     vector<double> crossoverRateValues = {0.1, 0.25, 0.5, 0.75, 1.0};
@@ -380,8 +380,7 @@ void runRuinAndRepairGA() {
              << " configurations did not find any feasible solution.\n";
     }
 }
-
-/*
+*/
 void runRuinAndRepairGA() {
   HomeCare homeCare;
   homeCare.init("./data/train_0.json");
@@ -391,11 +390,11 @@ void runRuinAndRepairGA() {
       2000, // Popsize
       0.1, //Epsilon
       3, //kParents
-      200, //Generations
-      5.0, //Penalty
-      0.6, // Crossover rate
-      0.2, //Mutation rate
-      0.2, // Scaling factor
+      1000, //Generations
+      2.5, //Penalty
+      0.7, // Crossover rate
+      0.3, //Mutation rate
+      0.5, // Scaling factor
       6, // k Elites
       cosineSimilarity // Similarity function
       );
@@ -407,12 +406,15 @@ void runRuinAndRepairGA() {
   }
   auto solution = r.getBestSolution();
   cout << "Solution: ";
+  ofstream file("example_solution.csv");
   for (auto pat : solution.getGenes()) {
     cout << pat << " ";
+    file << pat << " ";
   }
+  file << "\n";
+  file.close();
   cout << endl << "Fitness: " << solution.getFitness() << endl;
 }
-*/
 
 
 int main() {

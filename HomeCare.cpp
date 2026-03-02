@@ -103,9 +103,9 @@ bool HomeCare::allPatientsPresent(const vector<int>& solution) const {
   return true;
 }
 
-double HomeCare::calculateFitness(const vector<int>& gene, double penalty) const {
+pair<double, double> HomeCare::calculateFitness(const vector<int>& gene, double penalty) const {
   if (gene.empty()) {
-    return INFINITY;
+    return pair<double, double>(INFINITY, INFINITY);
   }
   // The logic in the algorithm requires all patients to be present, so this is considered an error
   if (!allPatientsPresent(gene)) {
@@ -156,7 +156,7 @@ double HomeCare::calculateFitness(const vector<int>& gene, double penalty) const
     currentDemand += patients[currentPatient].getDemand();
   }
 
-  return sum + penalty*excessStrain + penalty*timeViolations;
+  return pair<double, double>(sum, penalty*excessStrain + penalty*timeViolations);
 }
 
 

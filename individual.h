@@ -9,6 +9,7 @@ extern std::mt19937 gen;
 class Individual {
 private:
     double fitness;
+    double penalty;
     std::vector<int> genes;
 
 public:
@@ -20,6 +21,8 @@ public:
     const std::vector<int>& getGenes() const;
     void setGenes(const std::vector<int>& g);
     void setGenes(std::vector<int>&& g);
+    double getPenalty() const;
+    void setPenalty(double penalty);
 
     void swapPatients(size_t idx1, size_t idx2);
     void mutation(double mutationRate);
