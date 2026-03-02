@@ -42,6 +42,12 @@ private:
 
     void mutate(Individual& i);
 
+    void twoOptMutation(Individual& individual);
+
+    void relocateMutation(Individual& individual);
+
+    void exchangeMutation(Individual& individual);
+
     void generalizedCrowding(vector<Individual>& parents, vector<Individual>& children, vector<Individual>& suvivors);
 
 public:

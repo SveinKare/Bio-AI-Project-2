@@ -35,9 +35,11 @@ RuinAndRepair::RuinAndRepair(
     kElites(kElites),
     similarityFunc(similarityFunc)
 {}
+
 Individual RuinAndRepair::getBestSolution() {
   double minFitness = numeric_limits<double>::max();
   Individual best;
+  best.setFitness(minFitness);
 
   for (const auto& ind : population) {
     if (ind.getFitness() > minFitness) continue;
@@ -75,58 +77,43 @@ void RuinAndRepair::printPopulationStats() {
 }
 
 Individual RuinAndRepair::randomIndividual(vector<vector<int>>& clusters) {
-  uniform_real_distribution<double> chooseRandom(0.0, 1.0);
-  uniform_int_distribution<int> randomCluster(0, homeCare.getNumberOfNurses() - 1);
-  size_t currNurse = 0;
-  int assignedPatients = 0;
-
-  // Init routes, all routes start at depot
+  // Create list of all patients
+  vector<int> patients;
+  for (int i = 1; i <= homeCare.getNbrPatients(); i++) {
+    patients.push_back(i);
+  }
+  
+  // Shuffle patients randomly
+  shuffle(patients.begin(), patients.end(), rng);
+  
+  // Distribute patients round-robin to nurses
   vector<vector<int>> routes(homeCare.getNumberOfNurses());
-  vector<bool> assigned(homeCare.getNbrPatients(), false);
+  
+  // Initialize all routes with depot
   for (size_t i = 0; i < routes.size(); i++) {
     routes[i].push_back(0);
   }
-
-  while (assignedPatients < homeCare.getNbrPatients()) {
-    size_t clusterIdx = currNurse;
-
-    // Choose a patient from a random route with prob. epsilon
-    if (chooseRandom(rng) < this->epsilon) {
-      clusterIdx = randomCluster(rng);
-    }
-
-    // Find the nearest neighbor
-    int bestPatient = -1;
-    double shortestTravelTime = INFINITY;
-    int lastPatient = routes[currNurse].back();
-    for (size_t i = 0; i < clusters[clusterIdx].size(); i++) {
-      int patientIdx = clusters[clusterIdx][i];
-      if (assigned[patientIdx-1]) continue;
-      double travelTime = homeCare.getTravelTime(lastPatient, patientIdx);
-      if (travelTime < shortestTravelTime) {
-        shortestTravelTime = travelTime;
-        bestPatient = patientIdx;
-      }
-    }
-
-    // Add to nurses route
-    if (bestPatient > 0) {
-      routes[currNurse].push_back(bestPatient);
-      assigned[bestPatient-1] = true;
-      assignedPatients++;
-    }
-
+  
+  // Assign patients round-robin
+  size_t currNurse = 0;
+  for (int patient : patients) {
+    routes[currNurse].push_back(patient);
     currNurse = (currNurse + 1) % homeCare.getNumberOfNurses();
   }
+  
+  // Build gene from routes
   vector<int> gene;
-  for (auto&v : routes) {
-    gene.insert(gene.end(), v.begin(), v.end());
+  for (auto& route : routes) {
+    gene.insert(gene.end(), route.begin(), route.end());
   }
-  gene.push_back(0);
-  auto i = Individual();
-  i.setFitness(homeCare.calculateFitness(gene, this->penalty));
-  i.setGenes(gene);
-  return i;
+  gene.push_back(0);  // Final depot
+  
+  // Create individual
+  auto individual = Individual();
+  individual.setGenes(gene);
+  individual.setFitness(homeCare.calculateFitness(gene, this->penalty));
+  
+  return individual;
 }
 
 void RuinAndRepair::initPopulation() {
@@ -259,67 +246,115 @@ void RuinAndRepair::test() {
 }
 
 void RuinAndRepair::mutate(Individual& individual) {
+  uniform_real_distribution<double> choice(0.0, 1.0);
+  double r = choice(rng);
+  
+  if (r < 0.4) {
+    twoOptMutation(individual);      // 40%: Local route optimization
+  } else if (r < 0.7) {
+    relocateMutation(individual);    // 30%: Move patient between routes
+  } else {
+    exchangeMutation(individual);    // 30%: Swap patients between routes
+  }
+}
+
+void RuinAndRepair::twoOptMutation(Individual& individual) {
   vector<int> gene = individual.getGenes();
-  double ruinFraction = 0.05;
-
-  // Only operate on the inner part of the gene (excluding first and last depot)
-  vector<int> inner(gene.begin() + 1, gene.end() - 1);
-  int innerSize = (int)inner.size();
-  int ruinSize = max(1, (int)(innerSize * ruinFraction));
-
-  uniform_int_distribution<int> startDist(0, innerSize - ruinSize);
-  int startIdx = startDist(rng);
-
-  // --- RUIN: extract segment from inner ---
-  vector<int> ruined(inner.begin() + startIdx, inner.begin() + startIdx + ruinSize);
-  vector<int> remaining;
-  remaining.insert(remaining.end(), inner.begin(), inner.begin() + startIdx);
-  remaining.insert(remaining.end(), inner.begin() + startIdx + ruinSize, inner.end());
-
-  // --- REPAIR: split ruined into patients and depots ---
-  vector<int> ruinedPatients, ruinedDepots;
-  for (int val : ruined) {
-    if (val == 0) ruinedDepots.push_back(val);
-    else ruinedPatients.push_back(val);
+  
+  // Find route boundaries
+  vector<int> depots;
+  for (size_t i = 0; i < gene.size(); i++) {
+    if (gene[i] == 0) depots.push_back(i);
   }
+  
+  if (depots.size() <= 2) return;
+  
+  // Pick random route
+  uniform_int_distribution<int> routeDist(0, depots.size() - 2);
+  int routeIdx = routeDist(rng);
+  int start = depots[routeIdx];
+  int end = depots[routeIdx + 1];
+  
+  if (end - start <= 2) return;  // Need at least 2 patients
+  
+  // Pick two positions
+  uniform_int_distribution<int> posDist(start + 1, end - 1);
+  int i = posDist(rng);
+  int j = posDist(rng);
+  
+  if (i > j) swap(i, j);
+  if (i == j) return;
+  
+  // Reverse segment
+  reverse(gene.begin() + i, gene.begin() + j + 1);
+  
+  individual.setGenes(gene);
+  individual.setFitness(homeCare.calculateFitness(gene, this->penalty));
+}
 
-  // Reinsert patients using cheapest insertion
-  shuffle(ruinedPatients.begin(), ruinedPatients.end(), rng);
-  for (int val : ruinedPatients) {
-    double bestCost = numeric_limits<double>::max();
-    int bestPos = (int)remaining.size();
-    for (int i = 1; i < (int)remaining.size(); i++) {
-      int prev = remaining[i-1];
-      int next = remaining[i];
-      double insertionCost = homeCare.getTravelTime(prev, val)
-        + homeCare.getTravelTime(val, next)
-        - homeCare.getTravelTime(prev, next);
-      if (insertionCost < bestCost) {
-        bestCost = insertionCost;
-        bestPos = i;
-      }
+void RuinAndRepair::relocateMutation(Individual& individual) {
+  vector<int> gene = individual.getGenes();
+  
+  // Find all patient positions
+  vector<int> patientPos;
+  for (size_t i = 0; i < gene.size(); i++) {
+    if (gene[i] != 0) patientPos.push_back(i);
+  }
+  
+  if (patientPos.empty()) return;
+  
+  // Pick random patient
+  uniform_int_distribution<int> patDist(0, patientPos.size() - 1);
+  int removeIdx = patientPos[patDist(rng)];
+  int patient = gene[removeIdx];
+  
+  // Remove patient
+  gene.erase(gene.begin() + removeIdx);
+  
+  // Insert at random position (not at depot)
+  vector<int> validInsertPos;
+  for (size_t i = 1; i < gene.size(); i++) {
+    if (gene[i-1] != 0 || gene[i] != 0) {  // Not between two depots
+      validInsertPos.push_back(i);
     }
-    remaining.insert(remaining.begin() + bestPos, val);
   }
+  
+  if (validInsertPos.empty()) return;
+  
+  uniform_int_distribution<int> insDist(0, validInsertPos.size() - 1);
+  int insertIdx = validInsertPos[insDist(rng)];
+  
+  gene.insert(gene.begin() + insertIdx, patient);
+  
+  individual.setGenes(gene);
+  individual.setFitness(homeCare.calculateFitness(gene, this->penalty));
+}
 
-  // Reinsert depots randomly
-  for (int dep : ruinedDepots) {
-    if (remaining.size() <= 1) {
-      remaining.push_back(dep);
-      continue;
-    }
-    uniform_int_distribution<int> depotDist(1, (int)remaining.size() - 1);
-    remaining.insert(remaining.begin() + depotDist(rng), dep);
+void RuinAndRepair::exchangeMutation(Individual& individual) {
+  vector<int> gene = individual.getGenes();
+  
+  // Find all patient positions
+  vector<int> patientPos;
+  for (size_t i = 0; i < gene.size(); i++) {
+    if (gene[i] != 0) patientPos.push_back(i);
   }
-
-  // Rebuild full gene with preserved start and end depots
-  vector<int> newGene;
-  newGene.push_back(0);
-  newGene.insert(newGene.end(), remaining.begin(), remaining.end());
-  newGene.push_back(0);
-
-  individual.setGenes(newGene);
-  individual.setFitness(homeCare.calculateFitness(newGene, this->penalty));
+  
+  if (patientPos.size() < 2) return;
+  
+  // Pick two random patients
+  uniform_int_distribution<int> patDist(0, patientPos.size() - 1);
+  int pos1 = patientPos[patDist(rng)];
+  int pos2 = patientPos[patDist(rng)];
+  
+  while (pos1 == pos2 && patientPos.size() > 1) {
+    pos2 = patientPos[patDist(rng)];
+  }
+  
+  // Swap
+  swap(gene[pos1], gene[pos2]);
+  
+  individual.setGenes(gene);
+  individual.setFitness(homeCare.calculateFitness(gene, this->penalty));
 }
 
 void RuinAndRepair::generalizedCrowding(vector<Individual>& parents, vector<Individual>& children, vector<Individual>& survivors) {
