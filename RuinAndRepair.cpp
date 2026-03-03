@@ -484,3 +484,75 @@ void RuinAndRepair::run() {
     this->printPopulationStats();
   }
 }
+
+void RuinAndRepair::runGenerations(int generations) {
+  uniform_int_distribution<int> randIndex(0, this->popSize-1);
+  uniform_real_distribution<double> randEvent(0.0, 1.0);
+  for (int g = 0; g < generations; g++) {
+    int newPopSize = kElites;
+    vector<Individual> newPop;
+    auto elites = this->eliteSelection();
+    newPop.insert(newPop.end(), elites.begin(), elites.end());
+
+    while (newPopSize < popSize) {
+      // Select parents
+      vector<Individual> candidates;
+      for (int i = 0; i < kParents*2; i++) {
+        candidates.push_back(population[randIndex(rng)]);
+      }
+
+      Individual first = tournamentParentSelection(candidates.begin(), candidates.begin()+kParents);
+      Individual second = tournamentParentSelection(candidates.begin()+kParents, candidates.end());
+
+
+      vector<Individual> children;
+      vector<Individual> parents = {first,second};
+      if (randEvent(rng) < this->crossoverRate) {
+        // Recombine
+        this->orderCrossover(parents, children);
+      } else {
+        // Copy the children
+        children = parents;
+      }
+
+      // Mutate
+      if (randEvent(rng) < this->mutationRate) {
+        this->mutate(children[0]);
+        auto fitness = homeCare.calculateFitness(children[0].getGenes(), this->penalty);
+        children[0].setFitness(fitness.first + fitness.second);
+        children[0].setPenalty(fitness.second);
+      }
+      if (randEvent(rng) < this->mutationRate) {
+        this->mutate(children[1]);
+        auto fitness = homeCare.calculateFitness(children[1].getGenes(), this->penalty);
+        children[1].setFitness(fitness.first + fitness.second);
+        children[1].setPenalty(fitness.second);
+      }
+
+      // Crowding (group by cosine similarity)
+      vector<Individual> survivors;
+      this->generalizedCrowding(parents, children, survivors);
+
+      newPop.insert(newPop.end(), survivors.begin(), survivors.end());
+      newPopSize += 2;
+    }
+    this->population = std::move(newPop);
+  }
+}
+
+vector<Individual> RuinAndRepair::getBestIndividuals(int k) const {
+  auto sorted = population;
+  sort(sorted.begin(), sorted.end(), [](const Individual& a, const Individual& b) {
+      return a.getFitness() < b.getFitness();
+      });
+  return vector<Individual>(sorted.begin(), sorted.begin() + k);
+}
+
+void RuinAndRepair::injectIndividuals(vector<Individual>& immigrants) {
+    sort(population.begin(), population.end(), [](const Individual& a, const Individual& b) {
+        return a.getFitness() > b.getFitness();  
+    });
+    for (int i = 0; i < immigrants.size(); i++) {
+        population[i] = immigrants[i];  
+    }
+}

@@ -28,10 +28,6 @@ private:
 
     std::vector<Individual> population;
 
-    void printPopulationStats();
-
-    void initPopulation();
-
     Individual randomIndividual(vector<vector<int>>& clusters);
 
     vector<Individual> eliteSelection();
@@ -64,6 +60,7 @@ public:
         int kElites,
         SimilarityFunc similarityFunc
         );
+    void printPopulationStats();
 
     double getMinFitness();
 
@@ -71,5 +68,13 @@ public:
 
     void test();
 
+    void initPopulation();
+
     void run();
+    
+    void runGenerations(int generations);
+
+    vector<Individual> getBestIndividuals(int k) const;
+
+    void injectIndividuals(vector<Individual>& immigrants);
 };

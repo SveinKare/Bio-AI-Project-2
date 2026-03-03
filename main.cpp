@@ -10,6 +10,11 @@
 #include "RuinAndRepair.hpp"
 #include "Similarity.hpp"
 #include <fstream>
+#include "IslandGA.hpp"
+#include <mutex>
+#include <atomic>
+#include <queue>
+#include <condition_variable>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -227,170 +232,180 @@ void writeClustersToCSV(const std::vector<std::vector<int>>& clusters,
   file.close();
   std::cout << "Clusters written to " << path << std::endl;
 }
-/*
-void runRuinAndRepairGA() {
+
+void runParameterTuning() {
     vector<double> penaltyValues = {0.5, 1.0, 2.5, 5.0};
-    vector<double> crossoverRateValues = {0.1, 0.25, 0.5, 0.75, 1.0};
-    vector<double> mutationRateValues = {0.1, 0.25, 0.5, 0.75, 1.0};
-    vector<double> scalingFactorValues = {0.1, 0.5, 1.0, 2.5, 5.0};
-    
+    vector<double> crossoverRateValues = {0.25, 0.5, 0.75, 1.0};
+    vector<double> mutationRateValues = {0.25, 0.5, 0.75, 1.0};
+    vector<double> scalingFactorValues = {0.5, 1.0, 2.5, 5.0};
+
     // Fixed parameters
     double epsilon = 0.1;
-    int popSize = 2000;
+    int popSize = 1000;
     int kParents = 3;
-    int generations = 200;
+    int generations = 100;
     int kElites = 6;
-    
+
     struct Result {
         double penalty, crossoverRate, mutationRate, scalingFactor;
         double minFitness;
         bool foundFeasible;
     };
-    
+
+    struct Task {
+        double penalty, crossoverRate, mutationRate, scalingFactor;
+    };
+
+    // Build task queue
+    vector<Task> tasks;
+    for (double penalty : penaltyValues)
+        for (double crossoverRate : crossoverRateValues)
+            for (double mutationRate : mutationRateValues)
+                for (double scalingFactor : scalingFactorValues)
+                    tasks.push_back({penalty, crossoverRate, mutationRate, scalingFactor});
+
+    const int total = tasks.size();
     vector<Result> results;
-    
-    int total = penaltyValues.size() * crossoverRateValues.size() * 
-                mutationRateValues.size() * scalingFactorValues.size();
-    int current = 0;
-    
-    for (double penalty : penaltyValues) {
-        for (double crossoverRate : crossoverRateValues) {
-            for (double mutationRate : mutationRateValues) {
-                for (double scalingFactor : scalingFactorValues) {
-                    cout << "Run " << ++current << "/" << total
-                         << " | penalty=" << penalty
-                         << " crossover=" << crossoverRate
-                         << " mutation=" << mutationRate
-                         << " scaling=" << scalingFactor << endl;
-                    
-                    HomeCare homeCare;
-                    homeCare.init("./data/train_0.json");
-                    
-                    RuinAndRepair r(
-                        homeCare,
-                        popSize,
-                        epsilon,
-                        kParents,
-                        generations,
-                        penalty,
-                        crossoverRate,
-                        mutationRate,
-                        scalingFactor,
-                        kElites,
-                        cosineSimilarity
-                    );
-                    
-                    try {
-                        r.run();
-                    } catch (const runtime_error& e) {
-                        cout << "  ERROR: " << e.what() << endl;
-                        continue;
-                    }
-                    
-                    auto solution = r.getBestSolution();
-                    double fitness = solution.getFitness();
-                    
-                    // Check if getBestSolution found a feasible solution
-                    bool foundFeasible = (fitness != numeric_limits<double>::max());
-                    
-                    cout << "  Fitness: " << fitness 
-                         << " | Feasible: " << (foundFeasible ? "YES" : "NO") << endl;
-                    
-                    results.push_back({
-                        penalty, 
-                        crossoverRate, 
-                        mutationRate, 
-                        scalingFactor, 
-                        fitness,
-                        foundFeasible
-                    });
-                }
+    results.reserve(total);
+
+    mutex resultsMutex;
+    mutex coutMutex;
+    atomic<int> current{0};
+
+    // Determine thread count (leave one core free)
+    const int numThreads = 8;
+    cout << "Running " << total << " configurations across " << numThreads << " threads\n";
+
+    // Worker lambda
+    auto worker = [&](int threadId, int start, int end) {
+        for (int i = start; i < end; i++) {
+            const Task& t = tasks[i];
+            int runNum = ++current;
+
+            {
+                lock_guard<mutex> lock(coutMutex);
+                cout << "Run " << runNum << "/" << total
+                     << " | penalty=" << t.penalty
+                     << " crossover=" << t.crossoverRate
+                     << " mutation=" << t.mutationRate
+                     << " scaling=" << t.scalingFactor
+                     << " [thread " << threadId << "]\n";
+            }
+
+            HomeCare homeCare;
+            homeCare.init("./data/train_0.json");
+            RuinAndRepair r(
+                homeCare,
+                popSize, epsilon, kParents, generations,
+                t.penalty,   // Penalty
+                t.crossoverRate,   // Crossover rate
+                t.mutationRate,   // Mutation rate
+                t.scalingFactor,   // Scaling factor
+                kElites,     // k Elites
+                cosineSimilarity
+                );
+            try {
+              r.run();
+            } catch (const runtime_error& e) {
+              cout << e.what() << endl;
+              return;
+            }
+
+
+            auto solution = r.getBestSolution();
+            double fitness = solution.getFitness();
+            bool foundFeasible = (fitness != numeric_limits<double>::max());
+
+            {
+              lock_guard<mutex> lock(coutMutex);
+              cout << "  [thread " << threadId << "] Run " << runNum
+                << " fitness=" << fitness
+                << " | Feasible: " << (foundFeasible ? "YES" : "NO") << "\n";
+            }
+
+            {
+              lock_guard<mutex> lock(resultsMutex);
+              results.push_back({t.penalty, t.crossoverRate, t.mutationRate,
+                  t.scalingFactor, fitness, foundFeasible});
             }
         }
+    };
+
+    // Distribute tasks across threads
+    vector<thread> threads;
+    threads.reserve(numThreads);
+    int chunkSize = (total + numThreads - 1) / numThreads;
+
+    for (int i = 0; i < numThreads; i++) {
+      int start = i * chunkSize;
+      int end = min(start + chunkSize, total);
+      if (start >= total) break;
+      threads.emplace_back(worker, i, start, end);
     }
-    
-    // Separate feasible and infeasible results
-    vector<Result> feasibleResults;
-    vector<Result> infeasibleResults;
-    
+
+    for (auto& t : threads) t.join();
+
+    // --- Post-processing (unchanged) ---
+    vector<Result> feasibleResults, infeasibleResults;
     for (const auto& res : results) {
-        if (res.foundFeasible) {
-            feasibleResults.push_back(res);
-        } else {
-            infeasibleResults.push_back(res);
-        }
+      if (res.foundFeasible) feasibleResults.push_back(res);
+      else                   infeasibleResults.push_back(res);
     }
-    
-    // Sort feasible by fitness (best first)
-    sort(feasibleResults.begin(), feasibleResults.end(), 
-         [](const Result& a, const Result& b) {
-             return a.minFitness < b.minFitness;
-         });
-    
-    // Write all results to file
-    ofstream file("hybridMutation_randomInit.csv");
+
+    sort(feasibleResults.begin(), feasibleResults.end(),
+        [](const Result& a, const Result& b) {
+        return a.minFitness < b.minFitness;
+        });
+
+    ofstream file("tuning.csv");
     file << "fitness,penalty,crossover_rate,mutation_rate,scaling_factor,feasible\n";
     file << fixed << setprecision(4);
-    
-    for (const auto& res : feasibleResults) {
-        file << res.minFitness << ","
-             << res.penalty << ","
-             << res.crossoverRate << ","
-             << res.mutationRate << ","
-             << res.scalingFactor << ","
-             << "1\n";
-    }
-    
-    for (const auto& res : infeasibleResults) {
-        file << "N/A,"
-             << res.penalty << ","
-             << res.crossoverRate << ","
-             << res.mutationRate << ","
-             << res.scalingFactor << ","
-             << "0\n";
-    }
-    
+
+    for (const auto& res : feasibleResults)
+      file << res.minFitness << "," << res.penalty << "," << res.crossoverRate
+        << "," << res.mutationRate << "," << res.scalingFactor << ",1\n";
+
+    for (const auto& res : infeasibleResults)
+      file << "N/A," << res.penalty << "," << res.crossoverRate
+        << "," << res.mutationRate << "," << res.scalingFactor << ",0\n";
+
     file.close();
-    cout << "\nResults written to file" << endl;
-    
-    // Print statistics
+    cout << "\nResults written to file\n";
+
     cout << "\n=== Summary ===\n";
-    cout << "Total runs: " << results.size() << endl;
-    cout << "Feasible solutions: " << feasibleResults.size() << endl;
-    cout << "Infeasible solutions: " << infeasibleResults.size() << endl;
-    
-    // Print top 5 feasible configurations
+    cout << "Total runs: " << results.size() << "\n";
+    cout << "Feasible solutions: " << feasibleResults.size() << "\n";
+    cout << "Infeasible solutions: " << infeasibleResults.size() << "\n";
+
     if (!feasibleResults.empty()) {
-        cout << "\n=== Top 5 Feasible Configurations ===\n";
-        for (int i = 0; i < min(5, (int)feasibleResults.size()); i++) {
-            const auto& res = feasibleResults[i];
-            cout << "#" << i+1 << " fitness=" << res.minFitness
-                 << " | penalty=" << res.penalty
-                 << " | crossover=" << res.crossoverRate
-                 << " | mutation=" << res.mutationRate
-                 << " | scaling=" << res.scalingFactor << "\n";
-        }
+      cout << "\n=== Top 5 Feasible Configurations ===\n";
+      for (int i = 0; i < min(5, (int)feasibleResults.size()); i++) {
+        const auto& res = feasibleResults[i];
+        cout << "#" << i+1 << " fitness=" << res.minFitness
+          << " | penalty=" << res.penalty
+          << " | crossover=" << res.crossoverRate
+          << " | mutation=" << res.mutationRate
+          << " | scaling=" << res.scalingFactor << "\n";
+      }
     } else {
-        cout << "\nNo feasible solutions found!\n";
+      cout << "\nNo feasible solutions found!\n";
     }
-    
-    // Show which parameter combinations never found feasible solutions
-    if (!infeasibleResults.empty()) {
-        cout << "\n" << infeasibleResults.size() 
-             << " configurations did not find any feasible solution.\n";
-    }
+
+    if (!infeasibleResults.empty())
+      cout << "\n" << infeasibleResults.size()
+        << " configurations did not find any feasible solution.\n";
 }
-*/
+
 void runRuinAndRepairGA() {
   HomeCare homeCare;
   homeCare.init("./data/train_0.json");
 
   RuinAndRepair r(
       homeCare, 
-      2000, // Popsize
+      1000, // Popsize
       0.1, //Epsilon
       3, //kParents
-      3000, //Generations
+      500, //Generations
       2.5, //Penalty
       0.7, // Crossover rate
       0.3, //Mutation rate
@@ -419,7 +434,7 @@ void runRuinAndRepairGA() {
 
 int main() {
   //runIslandGA();
-  runRuinAndRepairGA();
+  runParameterTuning();
   return 0;
 }
 
