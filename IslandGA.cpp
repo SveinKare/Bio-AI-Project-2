@@ -1,5 +1,6 @@
 #include "IslandGA.hpp"
 #include <iostream>
+#include <thread>
 
 IslandGA::IslandGA(int migrationInterval, int migrationSize, int totalGenerations, vector<RuinAndRepair> islands): migrationInterval(migrationInterval), migrationSize(migrationSize), totalGenerations(totalGenerations), islands(islands) {}
 
@@ -16,10 +17,18 @@ void IslandGA::run() {
   for (RuinAndRepair& island : islands) island.initPopulation();
 
   for (int g = 0; g < totalGenerations; g += migrationInterval) {
+    vector<thread> threads;
     for (auto& island : islands) {
-      island.runGenerations(migrationInterval);
+      threads.emplace_back([&island, this]() {
+          island.runGenerations(migrationInterval);
+          });
     }
-    cout << "Generations: " << g << endl;
+    cout << "Running threads" << endl;
+
+    // Wait for all islands to finish before migrating
+    for (auto& t : threads) t.join();
+
+    cout << "Generation: " << g+migrationInterval << endl;
     for (auto& island : islands) {
       island.printPopulationStats();
     }
@@ -41,6 +50,6 @@ Individual IslandGA::getSolution() {
   }
   sort(solutions.begin(), solutions.end(), [](const Individual& a, const Individual& b) {
       return a.getFitness() < b.getFitness();  
-  });
+      });
   return solutions[0];
 }

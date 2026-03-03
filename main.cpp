@@ -399,42 +399,73 @@ void runParameterTuning() {
 void runRuinAndRepairGA() {
   HomeCare homeCare;
   homeCare.init("./data/train_0.json");
+  vector<double> values = {2.0, 3.0, 4.0, 5.0, 10.0};
+/*
+  for (auto var : values) {
+    RuinAndRepair r(
+        homeCare, 
+        1000, // Popsize
+        0.1, //Epsilon
+        3, //kParents
+        2000, //Generations
+        2.5, //Penalty (good)
+        0.6, // Crossover rate (good)
+        0.9, //Mutation rate (good)
+        var, // Scaling factor
+        6, // k Elites
+        cosineSimilarity // Similarity function
+        );
+    try {
+      r.run();
+    } catch (const runtime_error& e) {
+      cout << e.what() << endl;
+      return;
+    }
+    auto solution = r.getBestSolution();
+    ofstream file(to_string(var) + ".txt");
+    file << solution.getFitness() << "\n";
+    file.close();
+  }
+*/
+
+  vector<RuinAndRepair> islands;
+  int islandCount = 6;
 
   RuinAndRepair r(
       homeCare, 
       1000, // Popsize
       0.1, //Epsilon
       3, //kParents
-      500, //Generations
-      2.5, //Penalty
-      0.7, // Crossover rate
-      0.3, //Mutation rate
-      2.5, // Scaling factor
+      2000, //Generations
+      2.5, //Penalty (good)
+      0.6, // Crossover rate (good)
+      0.9, //Mutation rate (good)
+      2.0, // Scaling factor
       6, // k Elites
       cosineSimilarity // Similarity function
       );
-  try {
-    r.run();
-  } catch (const runtime_error& e) {
-    cout << e.what() << endl;
-    return;
-  }
-  auto solution = r.getBestSolution();
+  for (int i = 0; i < islandCount; i++) islands.push_back(r);
+  IslandGA iga(
+      400,
+      2,
+      2000,
+      islands
+      );
+  iga.run();
+  auto solution = iga.getSolution();
+
   cout << "Solution: ";
-  ofstream file("example_solution.csv");
   for (auto pat : solution.getGenes()) {
     cout << pat << " ";
-    file << pat << " ";
   }
-  file << "\n";
-  file.close();
   cout << endl << "Fitness: " << solution.getFitness() << endl;
 }
 
 
 int main() {
   //runIslandGA();
-  runParameterTuning();
+  //runParameterTuning();
+  runRuinAndRepairGA();
   return 0;
 }
 

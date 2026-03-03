@@ -462,15 +462,9 @@ void RuinAndRepair::run() {
       // Mutate
       if (randEvent(rng) < this->mutationRate) {
         this->mutate(children[0]);
-        auto fitness = homeCare.calculateFitness(children[0].getGenes(), this->penalty);
-        children[0].setFitness(fitness.first + fitness.second);
-        children[0].setPenalty(fitness.second);
       }
       if (randEvent(rng) < this->mutationRate) {
         this->mutate(children[1]);
-        auto fitness = homeCare.calculateFitness(children[1].getGenes(), this->penalty);
-        children[1].setFitness(fitness.first + fitness.second);
-        children[1].setPenalty(fitness.second);
       }
 
       // Crowding (group by cosine similarity)
@@ -518,15 +512,9 @@ void RuinAndRepair::runGenerations(int generations) {
       // Mutate
       if (randEvent(rng) < this->mutationRate) {
         this->mutate(children[0]);
-        auto fitness = homeCare.calculateFitness(children[0].getGenes(), this->penalty);
-        children[0].setFitness(fitness.first + fitness.second);
-        children[0].setPenalty(fitness.second);
       }
       if (randEvent(rng) < this->mutationRate) {
         this->mutate(children[1]);
-        auto fitness = homeCare.calculateFitness(children[1].getGenes(), this->penalty);
-        children[1].setFitness(fitness.first + fitness.second);
-        children[1].setPenalty(fitness.second);
       }
 
       // Crowding (group by cosine similarity)
