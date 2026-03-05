@@ -37,6 +37,15 @@ RuinAndRepair::RuinAndRepair(
     similarityFunc(similarityFunc)
 {}
 
+void RuinAndRepair::setPopulation(vector<Individual>& individuals) {
+  this->population = individuals;
+  for (auto& ind : this->population) {
+    auto fitness = homeCare.calculateFitness(ind.getGenes(), this->penalty);
+    ind.setFitness(fitness.first + fitness.second);
+    ind.setPenalty(fitness.second);
+  }
+}
+
 Individual RuinAndRepair::getBestSolution() {
   double minFitness = numeric_limits<double>::max();
   Individual best;
@@ -275,9 +284,9 @@ void RuinAndRepair::mutate(Individual& individual) {
   uniform_real_distribution<double> choice(0.0, 1.0);
   double r = choice(rng);
   
-  if (r < 0.1) {
+  if (r < 0.3) {
     twoOptMutation(individual);
-  } else if (r < 0.9) {
+  } else if (r < 0.7) {
     relocateMutation(individual);
   } else {
     exchangeMutation(individual);
@@ -525,6 +534,7 @@ void RuinAndRepair::runGenerations(int generations) {
       newPopSize += 2;
     }
     this->population = std::move(newPop);
+    cout << "Generation: " << g << endl;
   }
 }
 

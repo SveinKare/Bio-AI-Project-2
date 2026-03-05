@@ -108,9 +108,13 @@ pair<double, double> HomeCare::calculateFitness(const vector<int>& gene, double 
     return pair<double, double>(INFINITY, INFINITY);
   }
   // The logic in the algorithm requires all patients to be present, so this is considered an error
+
+  /* This is used to debug new methods and approaches
   if (!allPatientsPresent(gene)) {
     throw runtime_error("Invalid gene found");
   }
+  */
+
   if (gene[0] != 0 || gene[gene.size()-1] != 0) {
     throw runtime_error("Gene is missing 0 at start or end");
   }

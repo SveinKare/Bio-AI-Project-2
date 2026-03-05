@@ -398,67 +398,103 @@ void runParameterTuning() {
 
 void runRuinAndRepairGA() {
   HomeCare homeCare;
-  homeCare.init("./data/train_0.json");
-  vector<double> values = {2.0, 3.0, 4.0, 5.0, 10.0};
-/*
-  for (auto var : values) {
-    RuinAndRepair r(
-        homeCare, 
-        1000, // Popsize
-        0.1, //Epsilon
-        3, //kParents
-        2000, //Generations
-        2.5, //Penalty (good)
-        0.6, // Crossover rate (good)
-        0.9, //Mutation rate (good)
-        var, // Scaling factor
-        6, // k Elites
-        cosineSimilarity // Similarity function
-        );
-    try {
-      r.run();
-    } catch (const runtime_error& e) {
-      cout << e.what() << endl;
-      return;
-    }
-    auto solution = r.getBestSolution();
-    ofstream file(to_string(var) + ".txt");
-    file << solution.getFitness() << "\n";
-    file.close();
-  }
-*/
+  homeCare.init("./data/test_instance_1.json");
 
+  // ── Parameters ────────────────────────────────────────────────────────
+  int    numIslands        = 5;
+  int    islandPopSize     = 1000;
+  int    stage1Gens        = 3000;
+  int    elitesPerIsland   = 200;
+  double epsilon           = 0.1;
+  int    kParents          = 3;
+  double penalty           = 0.05;
+  double crossoverRate     = 0.9;
+  double mutationRate      = 0.3;
+  double scalingFactor     = 2.5;
+  int    kElites           = 6;
+
+  int    exploitKParents   = 20;
+  double exploitPenalty    = 2.5;
+  int    exploitGens       = 3000;
+  double exploitCrossover  = 0.5;
+  double exploitMutation   = 0.5;
+  int    exploitKElites    = 20;
+
+  ofstream file("attempt_2.txt");
+
+  // ── Log parameters ────────────────────────────────────────────────────
+  file << "=== Stage 1 Parameters ===" << "\n"
+       << "numIslands:      " << numIslands      << "\n"
+       << "islandPopSize:   " << islandPopSize   << "\n"
+       << "stage1Gens:      " << stage1Gens      << "\n"
+       << "elitesPerIsland: " << elitesPerIsland << "\n"
+       << "epsilon:         " << epsilon         << "\n"
+       << "kParents:        " << kParents        << "\n"
+       << "penalty:         " << penalty         << "\n"
+       << "crossoverRate:   " << crossoverRate   << "\n"
+       << "mutationRate:    " << mutationRate    << "\n"
+       << "scalingFactor:   " << scalingFactor   << "\n"
+       << "kElites:         " << kElites         << "\n"
+       << "\n=== Stage 2 Parameters ===" << "\n"
+       << "exploitPopSize:  " << numIslands * elitesPerIsland << "\n"
+       << "exploitKParents: " << exploitKParents << "\n"
+       << "exploitGens:     " << exploitGens     << "\n"
+       << "exploitCrossover:" << exploitCrossover << "\n"
+       << "exploitMutation: " << exploitMutation << "\n"
+       << "exploitKElites:  " << exploitKElites  << "\n"
+       << "\n=== Results ===" << "\n";
+
+  // ── Stage 1 ───────────────────────────────────────────────────────────
+  vector<Individual> elitePool;
   vector<RuinAndRepair> islands;
-  int islandCount = 6;
 
-  RuinAndRepair r(
-      homeCare, 
-      1000, // Popsize
-      0.1, //Epsilon
-      3, //kParents
-      2000, //Generations
-      2.5, //Penalty (good)
-      0.6, // Crossover rate (good)
-      0.9, //Mutation rate (good)
-      2.0, // Scaling factor
-      6, // k Elites
-      cosineSimilarity // Similarity function
-      );
-  for (int i = 0; i < islandCount; i++) islands.push_back(r);
-  IslandGA iga(
-      400,
-      2,
-      2000,
-      islands
-      );
-  iga.run();
-  auto solution = iga.getSolution();
-
-  cout << "Solution: ";
-  for (auto pat : solution.getGenes()) {
-    cout << pat << " ";
+  for (int i = 0; i < numIslands; i++) {
+    RuinAndRepair island(
+        homeCare, islandPopSize, epsilon, kParents, stage1Gens,
+        penalty, crossoverRate, mutationRate, scalingFactor, kElites,
+        cosineSimilarity
+    );
+    islands.emplace_back(island);
+    islands.back().initPopulation();
   }
-  cout << endl << "Fitness: " << solution.getFitness() << endl;
+
+  vector<thread> threads;
+  for (auto& island : islands) {
+    threads.emplace_back([&island, stage1Gens]() {
+        island.runGenerations(stage1Gens);
+    });
+  }
+  for (auto& t : threads) t.join();
+
+  for (auto& island : islands) {
+    auto elites = island.getBestIndividuals(elitesPerIsland);
+    elitePool.insert(elitePool.end(), elites.begin(), elites.end());
+  }
+
+  // ── Stage 2 ───────────────────────────────────────────────────────────
+  RuinAndRepair exploitIsland(
+      homeCare, (int)elitePool.size(), 0.0, exploitKParents, exploitGens,
+      exploitPenalty, exploitCrossover, exploitMutation, scalingFactor, exploitKElites,
+      cosineSimilarity
+  );
+  exploitIsland.setPopulation(elitePool);
+  exploitIsland.runGenerations(exploitGens);
+
+  auto solution = exploitIsland.getBestSolution();
+  auto doubleCheck = homeCare.calculateFitness(solution.getGenes(), 1.0);
+  if (doubleCheck.second == 0.0) {
+    cout << "Valid solution!" << endl;
+  } else {
+    cout << "Penalty was: " << doubleCheck.second << endl;
+  }
+  cout << "Benchmark: " << homeCare.getBenchmark() << endl;
+  cout  << "Solution: " << solution.getFitness() << endl;
+  file  << "Solution: " << solution.getFitness() << "\n";
+  for (auto& g : solution.getGenes()) {
+    file << g << " ";
+  }
+  file << "\n";
+  file.close();
 }
 
 

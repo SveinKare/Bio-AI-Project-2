@@ -77,4 +77,6 @@ public:
     vector<Individual> getBestIndividuals(int k) const;
 
     void injectIndividuals(vector<Individual>& immigrants);
+
+    void setPopulation(vector<Individual>& individuals);
 };

@@ -1,0 +1,24 @@
+=== Stage 1 Parameters ===
+numIslands:      5
+islandPopSize:   1000
+stage1Gens:      3000
+elitesPerIsland: 200
+epsilon:         0.1
+kParents:        3
+penalty:         0
+crossoverRate:   0.6
+mutationRate:    0.9
+scalingFactor:   2.5
+kElites:         6
+
+=== Stage 2 Parameters ===
+exploitPopSize:  1000
+exploitKParents: 20
+exploitGens:     3000
+exploitCrossover:0.8
+exploitMutation: 0.5
+exploitKElites:  20
+
+=== Results ===
+Solution: 1715.53
+0 75 33 56 67 52 22 0 48 15 74 10 71 0 29 44 34 45 19 79 0 30 42 88 90 31 0 20 91 28 9 1 69 63 0 23 46 84 57 2 68 17 27 53 0 89 64 5 93 4 26 0 0 60 13 76 38 18 50 8 24 0 0 0 83 49 36 82 80 87 41 14 0 51 61 78 62 7 66 0 40 37 0 16 85 54 77 11 0 0 0 39 59 35 55 72 58 32 65 0 12 6 86 73 21 0 0 0 70 47 43 25 92 81 3 0 
