@@ -302,7 +302,8 @@ void runParameterTuning() {
                 t.mutationRate,   // Mutation rate
                 t.scalingFactor,   // Scaling factor
                 kElites,     // k Elites
-                cosineSimilarity
+                cosineSimilarity,
+                random_device{}()
                 );
             try {
               r.run();
@@ -396,11 +397,22 @@ void runParameterTuning() {
         << " configurations did not find any feasible solution.\n";
 }
 
+string getTimestamp() {
+    auto now = chrono::system_clock::now();
+    time_t t = chrono::system_clock::to_time_t(now);
+    tm* tm_info = localtime(&t);
+    char buf[20];
+    strftime(buf, sizeof(buf), "%Y%m%d_%H%M%S", tm_info);
+    return string(buf);
+}
+// Output: 20260305_143201
+
 void runRuinAndRepairGA() {
   HomeCare homeCare;
   homeCare.init("./data/test_instance_1.json");
 
   // ── Parameters ────────────────────────────────────────────────────────
+  unsigned int seed        = random_device{}();
   int    numIslands        = 5;
   int    islandPopSize     = 1000;
   int    stage1Gens        = 3000;
@@ -416,14 +428,15 @@ void runRuinAndRepairGA() {
   int    exploitKParents   = 20;
   double exploitPenalty    = 2.5;
   int    exploitGens       = 3000;
-  double exploitCrossover  = 0.3;
-  double exploitMutation   = 0.9;
+  double exploitCrossover  = 0.5; // good
+  double exploitMutation   = 0.9; // good
   int    exploitKElites    = 20;
 
-  ofstream file("attempt_3.txt");
+  ofstream file(getTimestamp() + ".txt");
 
   // ── Log parameters ────────────────────────────────────────────────────
   file << "=== Stage 1 Parameters ===" << "\n"
+       << "Seed:            " << seed << "\n"
        << "numIslands:      " << numIslands      << "\n"
        << "islandPopSize:   " << islandPopSize   << "\n"
        << "stage1Gens:      " << stage1Gens      << "\n"
@@ -438,6 +451,7 @@ void runRuinAndRepairGA() {
        << "\n=== Stage 2 Parameters ===" << "\n"
        << "exploitPopSize:  " << numIslands * elitesPerIsland << "\n"
        << "exploitKParents: " << exploitKParents << "\n"
+       << "exploitPenalty:  " << exploitPenalty << "\n"
        << "exploitGens:     " << exploitGens     << "\n"
        << "exploitCrossover:" << exploitCrossover << "\n"
        << "exploitMutation: " << exploitMutation << "\n"
@@ -452,7 +466,7 @@ void runRuinAndRepairGA() {
     RuinAndRepair island(
         homeCare, islandPopSize, epsilon, kParents, stage1Gens,
         penalty, crossoverRate, mutationRate, scalingFactor, kElites,
-        cosineSimilarity
+        cosineSimilarity,(unsigned int)(seed+i)
     );
     islands.emplace_back(island);
     islands.back().initPopulation();
@@ -475,7 +489,7 @@ void runRuinAndRepairGA() {
   RuinAndRepair exploitIsland(
       homeCare, (int)elitePool.size(), 0.0, exploitKParents, exploitGens,
       exploitPenalty, exploitCrossover, exploitMutation, scalingFactor, exploitKElites,
-      cosineSimilarity
+      cosineSimilarity, (unsigned int)(seed+numIslands)
   );
   exploitIsland.setPopulation(elitePool);
   exploitIsland.runGenerations(exploitGens);
@@ -494,6 +508,9 @@ void runRuinAndRepairGA() {
     file << g << " ";
   }
   file << "\n";
+  auto output = homeCare.printSolution(solution.getGenes());
+  cout << output << endl;
+  file << output << "\n";
   file.close();
 }
 
@@ -501,7 +518,9 @@ void runRuinAndRepairGA() {
 int main() {
   //runIslandGA();
   //runParameterTuning();
-  runRuinAndRepairGA();
+  for (int i = 0; i < 10; i++) {
+    runRuinAndRepairGA();
+  }
   return 0;
 }
 

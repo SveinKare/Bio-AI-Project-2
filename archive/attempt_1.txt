@@ -18,6 +18,7 @@ exploitGens:     3000
 exploitCrossover:0.8
 exploitMutation: 0.5
 exploitKElites:  20
+exploitPenalty: 2.5
 
 === Results ===
 Solution: 1683.9

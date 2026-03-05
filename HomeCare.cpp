@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
+#include <sstream>
 
 using json = nlohmann::json;
 
@@ -163,4 +164,63 @@ pair<double, double> HomeCare::calculateFitness(const vector<int>& gene, double 
   return pair<double, double>(sum, penalty*excessStrain + penalty*timeViolations);
 }
 
+string HomeCare::printSolution(const vector<int>& gene) const {
+    ostringstream oss;
+    oss << "Nurse Capacity: " << this->capacity << "\n";
+    oss << "Depot return time: " << this->returnTime << "\n\n";
 
+    int    nurseNum  = 1;
+    double totalDist = 0.0;
+
+    size_t i = 1;
+    while (i < gene.size()) {
+        vector<int> route;
+        while (i < gene.size() && gene[i] != 0) {
+            route.push_back(gene[i]);
+            i++;
+        }
+        i++;
+
+        double routeTravelTime = 0.0;
+        int    coveredDemand   = 0;
+        double time            = 0.0;
+        int    prev            = 0;
+
+        for (int patient : route) {
+            double travel   = this->travelTimes[prev][patient];
+            time            += travel;
+            routeTravelTime += travel;
+
+            if (time < patients[patient].getStartTime()) {
+                time += patients[patient].getStartTime() - time;
+            }
+            time          += patients[patient].getCareTime();
+            coveredDemand += patients[patient].getDemand();
+            prev           = patient;
+        }
+
+        double returnTravel = this->travelTimes[prev][0];
+        routeTravelTime    += returnTravel;
+        time               += returnTravel;
+
+        string sequence = "";
+        for (size_t j = 0; j < route.size(); j++) {
+            sequence += to_string(route[j]);
+            if (j + 1 < route.size()) sequence += " -> ";
+        }
+        if (sequence.empty()) sequence = "(empty)";
+
+        oss << "Nurse " << nurseNum
+            << "    Travel time: " << routeTravelTime
+            << "    Demand: "      << coveredDemand
+            << "    Route: D -> "  << sequence << " -> D"
+            << "\n";
+
+        totalDist += routeTravelTime;
+        nurseNum++;
+    }
+
+    oss << "\nTotal travel time: " << totalDist << "\n";
+
+    return oss.str();
+}

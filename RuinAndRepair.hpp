@@ -25,6 +25,7 @@ private:
     double scalingFactor;
     int kElites;
     SimilarityFunc similarityFunc;
+    mt19937 rng;
 
     std::vector<Individual> population;
 
@@ -58,7 +59,8 @@ public:
         double mutationRate,
         double scalingFactor,
         int kElites,
-        SimilarityFunc similarityFunc
+        SimilarityFunc similarityFunc,
+        unsigned int seed
         );
     void printPopulationStats();
 

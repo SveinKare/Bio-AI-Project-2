@@ -1,0 +1,54 @@
+=== Stage 1 Parameters ===
+Seed:            2546728900
+numIslands:      5
+islandPopSize:   1000
+stage1Gens:      3000
+elitesPerIsland: 200
+epsilon:         0.1
+kParents:        3
+penalty:         0.05
+crossoverRate:   0.9
+mutationRate:    0.2
+scalingFactor:   2.5
+kElites:         6
+
+=== Stage 2 Parameters ===
+exploitPopSize:  1000
+exploitKParents: 20
+exploitPenalty:  2.5
+exploitGens:     3000
+exploitCrossover:0.5
+exploitMutation: 0.9
+exploitKElites:  20
+
+=== Results ===
+Solution: 1669.23
+0 48 29 44 34 45 19 86 73 21 0 0 0 23 46 84 57 68 2 93 26 0 51 61 78 27 17 4 37 0 83 49 36 82 80 87 41 11 0 0 16 62 56 67 58 32 72 0 89 64 7 33 66 0 25 38 42 50 88 8 24 0 91 76 28 1 9 18 71 0 20 70 15 81 79 3 14 0 0 0 12 6 85 39 77 65 22 0 40 30 75 63 69 90 31 0 0 0 0 74 60 47 13 43 92 10 0 0 59 35 55 54 52 5 53 0 
+Nurse Capacity: 205
+Depot return time: 1204
+
+Nurse 1    Travel time: 134.522    Demand: 199    Route: D -> 48 -> 29 -> 44 -> 34 -> 45 -> 19 -> 86 -> 73 -> 21 -> D
+Nurse 2    Travel time: 0    Demand: 0    Route: D -> (empty) -> D
+Nurse 3    Travel time: 0    Demand: 0    Route: D -> (empty) -> D
+Nurse 4    Travel time: 117.964    Demand: 202    Route: D -> 23 -> 46 -> 84 -> 57 -> 68 -> 2 -> 93 -> 26 -> D
+Nurse 5    Travel time: 168.926    Demand: 136    Route: D -> 51 -> 61 -> 78 -> 27 -> 17 -> 4 -> 37 -> D
+Nurse 6    Travel time: 154.949    Demand: 140    Route: D -> 83 -> 49 -> 36 -> 82 -> 80 -> 87 -> 41 -> 11 -> D
+Nurse 7    Travel time: 0    Demand: 0    Route: D -> (empty) -> D
+Nurse 8    Travel time: 120.816    Demand: 183    Route: D -> 16 -> 62 -> 56 -> 67 -> 58 -> 32 -> 72 -> D
+Nurse 9    Travel time: 101.957    Demand: 133    Route: D -> 89 -> 64 -> 7 -> 33 -> 66 -> D
+Nurse 10    Travel time: 172.201    Demand: 205    Route: D -> 25 -> 38 -> 42 -> 50 -> 88 -> 8 -> 24 -> D
+Nurse 11    Travel time: 107.032    Demand: 199    Route: D -> 91 -> 76 -> 28 -> 1 -> 9 -> 18 -> 71 -> D
+Nurse 12    Travel time: 111.15    Demand: 178    Route: D -> 20 -> 70 -> 15 -> 81 -> 79 -> 3 -> 14 -> D
+Nurse 13    Travel time: 0    Demand: 0    Route: D -> (empty) -> D
+Nurse 14    Travel time: 0    Demand: 0    Route: D -> (empty) -> D
+Nurse 15    Travel time: 111.99    Demand: 193    Route: D -> 12 -> 6 -> 85 -> 39 -> 77 -> 65 -> 22 -> D
+Nurse 16    Travel time: 109.733    Demand: 192    Route: D -> 40 -> 30 -> 75 -> 63 -> 69 -> 90 -> 31 -> D
+Nurse 17    Travel time: 0    Demand: 0    Route: D -> (empty) -> D
+Nurse 18    Travel time: 0    Demand: 0    Route: D -> (empty) -> D
+Nurse 19    Travel time: 0    Demand: 0    Route: D -> (empty) -> D
+Nurse 20    Travel time: 106.417    Demand: 159    Route: D -> 74 -> 60 -> 47 -> 13 -> 43 -> 92 -> 10 -> D
+Nurse 21    Travel time: 0    Demand: 0    Route: D -> (empty) -> D
+Nurse 22    Travel time: 151.572    Demand: 204    Route: D -> 59 -> 35 -> 55 -> 54 -> 52 -> 5 -> 53 -> D
+
+Total travel time: 1669.23
+

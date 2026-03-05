@@ -10,8 +10,6 @@
 
 using namespace std;
 
-mt19937 rng(random_device{}());
-
 RuinAndRepair::RuinAndRepair(
     HomeCare& homeCare, 
     int popSize, 
@@ -23,7 +21,8 @@ RuinAndRepair::RuinAndRepair(
     double mutationRate,
     double scalingFactor,
     int kElites,
-    SimilarityFunc similarityFunc)
+    SimilarityFunc similarityFunc,
+    unsigned int seed)
     : homeCare(homeCare), 
     popSize(popSize), 
     epsilon(epsilon), 
@@ -34,7 +33,8 @@ RuinAndRepair::RuinAndRepair(
     mutationRate(mutationRate),
     scalingFactor(scalingFactor),
     kElites(kElites),
-    similarityFunc(similarityFunc)
+    similarityFunc(similarityFunc),
+    rng(seed)
 {}
 
 void RuinAndRepair::setPopulation(vector<Individual>& individuals) {
@@ -419,17 +419,17 @@ void RuinAndRepair::generalizedCrowding(vector<Individual>& parents, vector<Indi
   double sf2 = parents[1].getFitness() < o2.getFitness() ? parents[1].getScalingFactor() : o2.getScalingFactor();
 
   // Inverted formula due to minimizing fitness
-  auto replacementProb = [&](double fitnessChild, double fitnessParent) {
-    return fitnessParent / (fitnessParent + scalingFactor * fitnessChild);
+  auto replacementProb = [&](double fitnessChild, double fitnessParent, double sf) {
+    return fitnessParent / (fitnessParent + sf * fitnessChild);
   };
 
-  if (randEvent(rng) < replacementProb(o1.getFitness(), parents[0].getFitness())) {
+  if (randEvent(rng) < replacementProb(o1.getFitness(), parents[0].getFitness(), sf1)) {
     survivors.push_back(o1);
   } else {
     survivors.push_back(parents[0]);
   }
 
-  if (randEvent(rng) < replacementProb(o2.getFitness(), parents[1].getFitness())) {
+  if (randEvent(rng) < replacementProb(o2.getFitness(), parents[1].getFitness(), sf2)) {
     survivors.push_back(o2);
   } else {
     survivors.push_back(parents[1]);
@@ -535,6 +535,7 @@ void RuinAndRepair::runGenerations(int generations) {
     }
     this->population = std::move(newPop);
     cout << "Generation: " << g << endl;
+    //this->printPopulationStats();
   }
 }
 
