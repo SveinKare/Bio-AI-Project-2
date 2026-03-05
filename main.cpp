@@ -416,11 +416,11 @@ void runRuinAndRepairGA() {
   int    exploitKParents   = 20;
   double exploitPenalty    = 2.5;
   int    exploitGens       = 3000;
-  double exploitCrossover  = 0.5;
-  double exploitMutation   = 0.5;
+  double exploitCrossover  = 0.3;
+  double exploitMutation   = 0.9;
   int    exploitKElites    = 20;
 
-  ofstream file("attempt_2.txt");
+  ofstream file("attempt_3.txt");
 
   // ── Log parameters ────────────────────────────────────────────────────
   file << "=== Stage 1 Parameters ===" << "\n"
