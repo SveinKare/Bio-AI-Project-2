@@ -409,11 +409,12 @@ string getTimestamp() {
 
 void runRuinAndRepairGA() {
   HomeCare homeCare;
-  homeCare.init("./data/test_instance_1.json");
+  string instance = "3";
+  homeCare.init("./data/test_instance_" + instance + ".json");
 
   // ── Parameters ────────────────────────────────────────────────────────
   unsigned int seed        = random_device{}();
-  int    numIslands        = 5;
+  int    numIslands        = 25;
   int    islandPopSize     = 1000;
   int    stage1Gens        = 3000;
   int    elitesPerIsland   = 200;
@@ -428,11 +429,11 @@ void runRuinAndRepairGA() {
   int    exploitKParents   = 20;
   double exploitPenalty    = 2.5;
   int    exploitGens       = 3000;
-  double exploitCrossover  = 0.5; // good
-  double exploitMutation   = 0.9; // good
+  double exploitCrossover  = 0.5;
+  double exploitMutation   = 0.5; // tried
   int    exploitKElites    = 20;
 
-  ofstream file(getTimestamp() + ".txt");
+  ofstream file("./instance_3/3_stage/" + getTimestamp() + ".txt");
 
   // ── Log parameters ────────────────────────────────────────────────────
   file << "=== Stage 1 Parameters ===" << "\n"
@@ -459,7 +460,7 @@ void runRuinAndRepairGA() {
        << "\n=== Results ===" << "\n";
 
   // ── Stage 1 ───────────────────────────────────────────────────────────
-  vector<Individual> elitePool;
+  vector<vector<Individual>> elitePools(5);
   vector<RuinAndRepair> islands;
 
   for (int i = 0; i < numIslands; i++) {
@@ -480,21 +481,45 @@ void runRuinAndRepairGA() {
   }
   for (auto& t : threads) t.join();
 
-  for (auto& island : islands) {
-    auto elites = island.getBestIndividuals(elitesPerIsland);
-    elitePool.insert(elitePool.end(), elites.begin(), elites.end());
+  for (size_t i = 0; i < islands.size(); i++) {
+    auto elites = islands[i].getBestIndividuals(elitesPerIsland);
+    elitePools[i%5].insert(elitePools[i%5].end(), elites.begin(), elites.end());
   }
 
   // ── Stage 2 ───────────────────────────────────────────────────────────
-  RuinAndRepair exploitIsland(
-      homeCare, (int)elitePool.size(), 0.0, exploitKParents, exploitGens,
+  vector<Individual> elitePool2;
+  vector<RuinAndRepair> islands2;
+  for (size_t i = 0; i < 5; i++) {
+    RuinAndRepair exploitIsland(
+        homeCare, (int)elitePools[i].size(), 0.0, exploitKParents, exploitGens,
+        exploitPenalty, exploitCrossover, exploitMutation, scalingFactor, exploitKElites,
+        cosineSimilarity, (unsigned int)(seed+numIslands+i)
+        );
+    exploitIsland.setPopulation(elitePools[i]);
+    islands2.push_back(exploitIsland);
+  }
+  vector<thread> round2;
+  for (auto& island: islands2) {
+    round2.emplace_back([&island, exploitGens]() {
+        island.runGenerations(exploitGens);
+    });
+  }
+  for (auto& t : round2) t.join();
+  vector<Individual> finalSelection;
+  for (auto& island : islands2) {
+    auto elites = island.getBestIndividuals(elitesPerIsland);
+    finalSelection.insert(finalSelection.end(), elites.begin(), elites.end());
+  }
+  RuinAndRepair finalIsland(
+      homeCare, (int)finalSelection.size(), 0.0, exploitKParents, exploitGens,
       exploitPenalty, exploitCrossover, exploitMutation, scalingFactor, exploitKElites,
-      cosineSimilarity, (unsigned int)(seed+numIslands)
-  );
-  exploitIsland.setPopulation(elitePool);
-  exploitIsland.runGenerations(exploitGens);
+      cosineSimilarity, (unsigned int)(seed+(2*numIslands))
+      );
+  finalIsland.setPopulation(finalSelection);
+  finalIsland.runGenerations(exploitGens);
 
-  auto solution = exploitIsland.getBestSolution();
+
+  auto solution = finalIsland.getBestSolution();
   auto doubleCheck = homeCare.calculateFitness(solution.getGenes(), 1.0);
   if (doubleCheck.second == 0.0) {
     cout << "Valid solution!" << endl;
@@ -518,7 +543,7 @@ void runRuinAndRepairGA() {
 int main() {
   //runIslandGA();
   //runParameterTuning();
-  for (int i = 0; i < 10; i++) {
+  for (int i = 0; i < 1; i++) {
     runRuinAndRepairGA();
   }
   return 0;

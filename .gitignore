@@ -7,3 +7,6 @@ main
 build/*
 data/*
 *.csv
+archive/
+instance_3/
+instance_2/
