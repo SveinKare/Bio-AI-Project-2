@@ -86,7 +86,7 @@ void RuinAndRepair::printPopulationStats() {
   cout << "Min fitness: " << minFitness << " | Max fitness: " << maxFitness << endl;
 }
 
-Individual RuinAndRepair::randomIndividual(vector<vector<int>>& clusters) {
+Individual RuinAndRepair::randomIndividual() {
   // Create list of all patients
   vector<int> patients;
   for (int i = 1; i <= homeCare.getNbrPatients(); i++) {
@@ -132,19 +132,8 @@ Individual RuinAndRepair::randomIndividual(vector<vector<int>>& clusters) {
 }
 
 void RuinAndRepair::initPopulation() {
-  vector<Point> points;
-
-  // CLustering using kmeans++
-  for (int i = 1; i <= homeCare.getNbrPatients(); i++) {
-    Patient p = homeCare.getPatients()[i];
-    points.push_back({static_cast<double>(p.getXCoord()), static_cast<double>(p.getYCoord()), i});
-  }
-
-  KMeans kmeans(homeCare.getNumberOfNurses());
-  vector<vector<int>> clusters = kmeans.fit(points);
-
   for (int i = 0; i < this->popSize; i++) {
-    this->population.push_back(randomIndividual(clusters));
+    this->population.push_back(randomIndividual());
   }
 }
 

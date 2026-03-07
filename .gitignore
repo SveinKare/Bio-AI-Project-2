@@ -7,3 +7,4 @@ main
 build/*
 data/*
 *.csv
+archive/

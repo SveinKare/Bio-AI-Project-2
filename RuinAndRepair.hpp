@@ -29,7 +29,7 @@ private:
 
     std::vector<Individual> population;
 
-    Individual randomIndividual(vector<vector<int>>& clusters);
+    Individual randomIndividual();
 
     vector<Individual> eliteSelection();
 

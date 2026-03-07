@@ -409,7 +409,7 @@ string getTimestamp() {
 
 void runRuinAndRepairGA() {
   HomeCare homeCare;
-  homeCare.init("./data/test_instance_1.json");
+  homeCare.init("./data/test_instance_3.json");
 
   // ── Parameters ────────────────────────────────────────────────────────
   unsigned int seed        = random_device{}();
@@ -428,11 +428,11 @@ void runRuinAndRepairGA() {
   int    exploitKParents   = 20;
   double exploitPenalty    = 2.5;
   int    exploitGens       = 3000;
-  double exploitCrossover  = 0.5; // good
-  double exploitMutation   = 0.9; // good
+  double exploitCrossover  = 0.5;
+  double exploitMutation   = 0.5;
   int    exploitKElites    = 20;
 
-  ofstream file(getTimestamp() + ".txt");
+  ofstream file("./instance_3/" + getTimestamp() + ".txt");
 
   // ── Log parameters ────────────────────────────────────────────────────
   file << "=== Stage 1 Parameters ===" << "\n"
@@ -518,7 +518,7 @@ void runRuinAndRepairGA() {
 int main() {
   //runIslandGA();
   //runParameterTuning();
-  for (int i = 0; i < 10; i++) {
+  for (int i = 0; i < 100; i++) {
     runRuinAndRepairGA();
   }
   return 0;

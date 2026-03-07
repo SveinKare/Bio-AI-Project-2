@@ -1,5 +1,5 @@
 === Stage 1 Parameters ===
-Seed:            2894677271
+Seed:            3070965653
 numIslands:      5
 islandPopSize:   1000
 stage1Gens:      3000
@@ -9,7 +9,7 @@ kParents:        3
 penalty:         0.05
 crossoverRate:   0.9
 mutationRate:    0.3
-scalingFactor:   2
+scalingFactor:   2.5
 kElites:         6
 
 === Stage 2 Parameters ===
@@ -18,14 +18,14 @@ exploitKParents: 20
 exploitPenalty:  2.5
 exploitGens:     3000
 exploitCrossover:0.5
-exploitMutation: 0.9
+exploitMutation: 0.5
 exploitKElites:  20
 
 === Results ===
 Solution: 1.79769e+308
 
-Nurse Capacity: 205
-Depot return time: 1204
+Nurse Capacity: 209
+Depot return time: 1475
 
 
 Total travel time: 0
