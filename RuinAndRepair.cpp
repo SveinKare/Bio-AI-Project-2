@@ -55,7 +55,7 @@ Individual RuinAndRepair::getBestSolution() {
     if (ind.getFitness() > minFitness) continue;
 
     if (ind.getPenalty() == 0.0) {
-      // Fitness has no penalty, which means it's a legal solution
+      // No penalty means it's a valid solution
       minFitness = ind.getFitness();
       best = ind;
     }
@@ -93,31 +93,28 @@ Individual RuinAndRepair::randomIndividual() {
     patients.push_back(i);
   }
   
-  // Shuffle patients randomly
+  // Shuffle patients and distribute them round-robin to nurses
   shuffle(patients.begin(), patients.end(), rng);
   
-  // Distribute patients round-robin to nurses
   vector<vector<int>> routes(homeCare.getNumberOfNurses());
-  
-  // Initialize all routes with depot
   for (size_t i = 0; i < routes.size(); i++) {
     routes[i].push_back(0);
   }
   
-  // Assign patients round-robin
   size_t currNurse = 0;
   for (int patient : patients) {
     routes[currNurse].push_back(patient);
     currNurse = (currNurse + 1) % homeCare.getNumberOfNurses();
   }
   
-  // Build gene from routes
+  // Combine into one vector
   vector<int> gene;
   for (auto& route : routes) {
     gene.insert(gene.end(), route.begin(), route.end());
   }
   gene.push_back(0);  // Final depot
 
+  // Random scaling factor with this->scalingFactor as maximum
   uniform_real_distribution<double> scalingDist(0.0, scalingFactor);
   
   // Create individual
@@ -388,7 +385,7 @@ void RuinAndRepair::exchangeMutation(Individual& individual) {
 
 void RuinAndRepair::generalizedCrowding(vector<Individual>& parents, vector<Individual>& children, vector<Individual>& survivors) {
   uniform_real_distribution<double> randEvent(0.0, 1.0);
-  // MINIMIZE FITNESS
+
   double simA = similarityFunc(parents[0].getGenes(), children[0].getGenes()) + similarityFunc(parents[1].getGenes(), children[1].getGenes());
   double simB = similarityFunc(parents[1].getGenes(), children[0].getGenes()) + similarityFunc(parents[0].getGenes(), children[1].getGenes());
 

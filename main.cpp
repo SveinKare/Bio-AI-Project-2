@@ -405,13 +405,12 @@ string getTimestamp() {
     strftime(buf, sizeof(buf), "%Y%m%d_%H%M%S", tm_info);
     return string(buf);
 }
-// Output: 20260305_143201
 
 void runRuinAndRepairGA() {
   HomeCare homeCare;
   homeCare.init("./data/test_instance_3.json");
 
-  // ── Parameters ────────────────────────────────────────────────────────
+  // Parameters
   unsigned int seed        = random_device{}();
   int    numIslands        = 5;
   int    islandPopSize     = 1000;
@@ -432,9 +431,9 @@ void runRuinAndRepairGA() {
   double exploitMutation   = 0.5;
   int    exploitKElites    = 20;
 
-  ofstream file("./instance_3/" + getTimestamp() + ".txt");
+  ofstream file(getTimestamp() + ".txt");
 
-  // ── Log parameters ────────────────────────────────────────────────────
+  // Logging parameters 
   file << "=== Stage 1 Parameters ===" << "\n"
        << "Seed:            " << seed << "\n"
        << "numIslands:      " << numIslands      << "\n"
@@ -458,7 +457,7 @@ void runRuinAndRepairGA() {
        << "exploitKElites:  " << exploitKElites  << "\n"
        << "\n=== Results ===" << "\n";
 
-  // ── Stage 1 ───────────────────────────────────────────────────────────
+  // Stage 1
   vector<Individual> elitePool;
   vector<RuinAndRepair> islands;
 
@@ -485,7 +484,7 @@ void runRuinAndRepairGA() {
     elitePool.insert(elitePool.end(), elites.begin(), elites.end());
   }
 
-  // ── Stage 2 ───────────────────────────────────────────────────────────
+  // Stage 2
   RuinAndRepair exploitIsland(
       homeCare, (int)elitePool.size(), 0.0, exploitKParents, exploitGens,
       exploitPenalty, exploitCrossover, exploitMutation, scalingFactor, exploitKElites,
@@ -516,11 +515,7 @@ void runRuinAndRepairGA() {
 
 
 int main() {
-  //runIslandGA();
-  //runParameterTuning();
-  for (int i = 0; i < 100; i++) {
-    runRuinAndRepairGA();
-  }
+  runRuinAndRepairGA();
   return 0;
 }
 
