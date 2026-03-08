@@ -16,7 +16,6 @@ class RuinAndRepair {
 private:
     HomeCare& homeCare;
     int popSize;
-    double epsilon;
     int kParents;
     int generations;
     double penalty;
@@ -51,7 +50,6 @@ public:
     explicit RuinAndRepair(
         HomeCare& homeCare, 
         int popSize, 
-        double epsilon, 
         int kParents, 
         int generations, 
         double penalty, 
@@ -63,6 +61,8 @@ public:
         unsigned int seed
         );
     void printPopulationStats();
+
+    double edgeEntropy();
 
     double getMinFitness();
 

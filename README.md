@@ -10,3 +10,8 @@ cmake ..
 make
 ./main
 ```
+For windows, there is a build script:
+```bash
+mkdir build
+build
+```

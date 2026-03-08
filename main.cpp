@@ -13,8 +13,6 @@
 #include "IslandGA.hpp"
 #include <mutex>
 #include <atomic>
-#include <queue>
-#include <condition_variable>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -240,7 +238,6 @@ void runParameterTuning() {
     vector<double> scalingFactorValues = {0.5, 1.0, 2.5, 5.0};
 
     // Fixed parameters
-    double epsilon = 0.1;
     int popSize = 1000;
     int kParents = 3;
     int generations = 100;
@@ -296,7 +293,7 @@ void runParameterTuning() {
             homeCare.init("./data/train_0.json");
             RuinAndRepair r(
                 homeCare,
-                popSize, epsilon, kParents, generations,
+                popSize, kParents, generations,
                 t.penalty,   // Penalty
                 t.crossoverRate,   // Crossover rate
                 t.mutationRate,   // Mutation rate
@@ -397,13 +394,42 @@ void runParameterTuning() {
         << " configurations did not find any feasible solution.\n";
 }
 
+void measureEntropy() {
+  HomeCare homeCare;
+  homeCare.init("./data/test_instance_3.json");
+  unsigned int seed        = random_device{}();
+  ofstream file("entropy_logging_exploit_island.txt");
+  int    numIslands        = 5;
+  int    islandPopSize     = 1000;
+  int    gens              = 3000;
+  int    kParents          = 20;
+  double penalty           = 2.5;
+  double crossoverRate     = 0.5;
+  double mutationRate      = 0.5;
+  double scalingFactor     = 2.5;
+  int    kElites           = 20;
+
+  RuinAndRepair island(
+      homeCare, islandPopSize, kParents, gens,
+      penalty, crossoverRate, mutationRate, scalingFactor, kElites,
+      cosineSimilarity,seed
+      );
+  island.initPopulation();
+  for (int i = 0; i < gens; i++) {
+    island.runGenerations(1);
+    file << island.edgeEntropy() << " ";
+  }
+  file << "\n";
+  file.close();
+}
+
 string getTimestamp() {
-    auto now = chrono::system_clock::now();
-    time_t t = chrono::system_clock::to_time_t(now);
-    tm* tm_info = localtime(&t);
-    char buf[20];
-    strftime(buf, sizeof(buf), "%Y%m%d_%H%M%S", tm_info);
-    return string(buf);
+  auto now = chrono::system_clock::now();
+  time_t t = chrono::system_clock::to_time_t(now);
+  tm* tm_info = localtime(&t);
+  char buf[20];
+  strftime(buf, sizeof(buf), "%Y%m%d_%H%M%S", tm_info);
+  return string(buf);
 }
 
 void runRuinAndRepairGA() {
@@ -416,7 +442,6 @@ void runRuinAndRepairGA() {
   int    islandPopSize     = 1000;
   int    stage1Gens        = 3000;
   int    elitesPerIsland   = 200;
-  double epsilon           = 0.1;
   int    kParents          = 3;
   double penalty           = 0.05;
   double crossoverRate     = 0.9;
@@ -435,27 +460,26 @@ void runRuinAndRepairGA() {
 
   // Logging parameters 
   file << "=== Stage 1 Parameters ===" << "\n"
-       << "Seed:            " << seed << "\n"
-       << "numIslands:      " << numIslands      << "\n"
-       << "islandPopSize:   " << islandPopSize   << "\n"
-       << "stage1Gens:      " << stage1Gens      << "\n"
-       << "elitesPerIsland: " << elitesPerIsland << "\n"
-       << "epsilon:         " << epsilon         << "\n"
-       << "kParents:        " << kParents        << "\n"
-       << "penalty:         " << penalty         << "\n"
-       << "crossoverRate:   " << crossoverRate   << "\n"
-       << "mutationRate:    " << mutationRate    << "\n"
-       << "scalingFactor:   " << scalingFactor   << "\n"
-       << "kElites:         " << kElites         << "\n"
-       << "\n=== Stage 2 Parameters ===" << "\n"
-       << "exploitPopSize:  " << numIslands * elitesPerIsland << "\n"
-       << "exploitKParents: " << exploitKParents << "\n"
-       << "exploitPenalty:  " << exploitPenalty << "\n"
-       << "exploitGens:     " << exploitGens     << "\n"
-       << "exploitCrossover:" << exploitCrossover << "\n"
-       << "exploitMutation: " << exploitMutation << "\n"
-       << "exploitKElites:  " << exploitKElites  << "\n"
-       << "\n=== Results ===" << "\n";
+    << "Seed:            " << seed << "\n"
+    << "numIslands:      " << numIslands      << "\n"
+    << "islandPopSize:   " << islandPopSize   << "\n"
+    << "stage1Gens:      " << stage1Gens      << "\n"
+    << "elitesPerIsland: " << elitesPerIsland << "\n"
+    << "kParents:        " << kParents        << "\n"
+    << "penalty:         " << penalty         << "\n"
+    << "crossoverRate:   " << crossoverRate   << "\n"
+    << "mutationRate:    " << mutationRate    << "\n"
+    << "scalingFactor:   " << scalingFactor   << "\n"
+    << "kElites:         " << kElites         << "\n"
+    << "\n=== Stage 2 Parameters ===" << "\n"
+    << "exploitPopSize:  " << numIslands * elitesPerIsland << "\n"
+    << "exploitKParents: " << exploitKParents << "\n"
+    << "exploitPenalty:  " << exploitPenalty << "\n"
+    << "exploitGens:     " << exploitGens     << "\n"
+    << "exploitCrossover:" << exploitCrossover << "\n"
+    << "exploitMutation: " << exploitMutation << "\n"
+    << "exploitKElites:  " << exploitKElites  << "\n"
+    << "\n=== Results ===" << "\n";
 
   // Stage 1
   vector<Individual> elitePool;
@@ -463,10 +487,10 @@ void runRuinAndRepairGA() {
 
   for (int i = 0; i < numIslands; i++) {
     RuinAndRepair island(
-        homeCare, islandPopSize, epsilon, kParents, stage1Gens,
+        homeCare, islandPopSize, kParents, stage1Gens,
         penalty, crossoverRate, mutationRate, scalingFactor, kElites,
         cosineSimilarity,(unsigned int)(seed+i)
-    );
+        );
     islands.emplace_back(island);
     islands.back().initPopulation();
   }
@@ -475,7 +499,7 @@ void runRuinAndRepairGA() {
   for (auto& island : islands) {
     threads.emplace_back([&island, stage1Gens]() {
         island.runGenerations(stage1Gens);
-    });
+        });
   }
   for (auto& t : threads) t.join();
 
@@ -486,10 +510,10 @@ void runRuinAndRepairGA() {
 
   // Stage 2
   RuinAndRepair exploitIsland(
-      homeCare, (int)elitePool.size(), 0.0, exploitKParents, exploitGens,
+      homeCare, (int)elitePool.size(), exploitKParents, exploitGens,
       exploitPenalty, exploitCrossover, exploitMutation, scalingFactor, exploitKElites,
       cosineSimilarity, (unsigned int)(seed+numIslands)
-  );
+      );
   exploitIsland.setPopulation(elitePool);
   exploitIsland.runGenerations(exploitGens);
 
@@ -516,6 +540,7 @@ void runRuinAndRepairGA() {
 
 int main() {
   runRuinAndRepairGA();
+  //measureEntropy();
   return 0;
 }
 

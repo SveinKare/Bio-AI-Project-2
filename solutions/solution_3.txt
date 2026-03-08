@@ -4,7 +4,6 @@ numIslands:      5
 islandPopSize:   1000
 stage1Gens:      3000
 elitesPerIsland: 200
-epsilon:         0.1
 kParents:        3
 penalty:         0.05
 crossoverRate:   0.9

@@ -1,5 +1,4 @@
 #include "RuinAndRepair.hpp"
-#include "KMeans.hpp"
 #include "individual.h"
 #include <limits>
 #include <random>
@@ -13,7 +12,6 @@ using namespace std;
 RuinAndRepair::RuinAndRepair(
     HomeCare& homeCare, 
     int popSize, 
-    double epsilon, 
     int kParents, 
     int generations, 
     double penalty, 
@@ -25,7 +23,6 @@ RuinAndRepair::RuinAndRepair(
     unsigned int seed)
     : homeCare(homeCare), 
     popSize(popSize), 
-    epsilon(epsilon), 
     kParents(kParents), 
     generations(generations), 
     penalty(penalty), 
@@ -83,7 +80,29 @@ void RuinAndRepair::printPopulationStats() {
     maxFitness = max(maxFitness, ind.getFitness());
   }
 
-  cout << "Min fitness: " << minFitness << " | Max fitness: " << maxFitness << endl;
+  cout << "Min fitness: " << minFitness << " | Max fitness: " << maxFitness;
+  //cout << " | Entropy: " << edgeEntropy();
+  cout << endl;
+}
+
+double RuinAndRepair::edgeEntropy() {
+    map<pair<int,int>, int> edgeCounts;
+    int totalEdges = 0;
+
+    for (auto& ind : population) {
+        auto& gene = ind.getGenes();
+        for (size_t i = 0; i + 1 < gene.size(); i++) {
+            edgeCounts[{gene[i], gene[i+1]}]++;
+            totalEdges++;
+        }
+    }
+
+    double entropy = 0.0;
+    for (auto& [edge, count] : edgeCounts) {
+        double p = (double)count / totalEdges;
+        entropy -= p * log2(p);
+    }
+    return entropy;
 }
 
 Individual RuinAndRepair::randomIndividual() {
@@ -521,6 +540,8 @@ void RuinAndRepair::runGenerations(int generations) {
     }
     this->population = std::move(newPop);
     cout << "Generation: " << g << endl;
+
+    // Comment this out to improve runtime
     //this->printPopulationStats();
   }
 }
