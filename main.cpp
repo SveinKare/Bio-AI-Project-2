@@ -6,7 +6,6 @@
 #include <chrono>
 #include <random>
 #include "HomeCare.hpp"
-#include "GA.h"
 #include "RuinAndRepair.hpp"
 #include "Similarity.hpp"
 #include <fstream>
