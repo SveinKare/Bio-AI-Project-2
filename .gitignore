@@ -5,6 +5,5 @@ cmake-build-*/
 main
 .clangd
 build/*
-data/*
 *.csv
 archive/
