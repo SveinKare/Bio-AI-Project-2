@@ -1,0 +1,51 @@
+#include "Similarity.hpp"
+#include <vector>
+#include <unordered_map>
+
+using namespace std;
+
+double cosineSimilarity(const vector<int>& a, const vector<int>& b) {
+    double dot = 0.0, normA = 0.0, normB = 0.0;
+    for (size_t i = 0; i < a.size(); i++) {
+        dot   += a[i] * b[i];
+        normA += a[i] * a[i];
+        normB += b[i] * b[i];
+    }
+    if (normA == 0.0 || normB == 0.0) return 0.0;
+    return dot / (sqrt(normA) * sqrt(normB));
+}
+
+double spearmanFootrule(const vector<int>& a, const vector<int>& b) {
+    // Extract non-zero values
+    vector<int> valsA, valsB;
+    for (size_t i = 0; i < a.size(); i++) {
+        if (a[i] != 0) valsA.push_back(a[i]);
+        if (b[i] != 0) valsB.push_back(b[i]);
+    }
+    
+    if (valsA.empty() || valsB.empty()) return 0.0;
+    
+    // Create rank maps: value -> position in sequence
+    unordered_map<int, int> rankA, rankB;
+    for (size_t i = 0; i < valsA.size(); i++) rankA[valsA[i]] = i;
+    for (size_t i = 0; i < valsB.size(); i++) rankB[valsB[i]] = i;
+    
+    // Sum absolute differences in ranks for common elements
+    int sumDiff = 0;
+    int commonCount = 0;
+    for (const auto& [val, rA] : rankA) {
+        if (rankB.count(val)) {
+            sumDiff += abs(rA - rankB[val]);
+            commonCount++;
+        }
+    }
+    
+    if (commonCount == 0) return 0.0;
+    
+    // Normalize: max possible sum is when sequence is completely reversed
+    // For n elements: 0 vs (n-1), 1 vs (n-2), ... = n*(n-1)/2
+    int maxDiff = commonCount * (commonCount - 1) / 2;
+    if (maxDiff == 0) return 1.0; // Only 1 common element
+    
+    return 1.0 - (double)sumDiff / maxDiff;
+}

@@ -1,12 +1,10 @@
-<<<<<<< HEAD
 build/
 cmake-build-*/
 *.o
 *.out
 main
-=======
 .clangd
 build/*
-build.bat
 data/*
->>>>>>> 92d507c (Implemented classes to parse datasets)
+*.csv
+archive/
