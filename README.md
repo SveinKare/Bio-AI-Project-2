@@ -26,3 +26,8 @@ make
 ./main
 ```
 
+## Running different parameters
+The project is set up to manually enter parameters and settings needed to reproduce results. 
+The runRuinAndRepairGA method in main.cpp contains the setup of the solutions. 
+Enter the name of the dataset as a parameter to HomeCare, and then enter the desired parameters.
+The output is written to a file in the working directory with a timestamp as the name. 
